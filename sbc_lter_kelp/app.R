@@ -9,30 +9,46 @@ library(bslib)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-  titlePanel("Dynamics of Santa Barbara Kelp Forests"),
-  theme = 'kelp.css',
-                navbarPage(
-                           tabPanel(
-                             "Factors Influencing Kelp Productivity", #start panel 1
-                                    sidebarLayout(
-                                      sidebarPanel("WIDGETS",
-                                                   checkboxGroupInput(inputId = "pick_indicator",
-                                                                      label = "Choose Indicator:",
-                                                                      choices = unique(starwars$species)
+        navbarPage("Dynamics of Santa Barbara Kelp Forests",
+            tabPanel("Project Overview", # Setting project description page
+                     mainPanel("Fill in Description")
+                     ), # End tab panel 1
+            
+            tabPanel("Factors Influencing Kelp Productivity", #start panel 2
+                      sidebarLayout(# Adding sidebar selector for factors
+                                    sidebarPanel("WIDGETS",
+                                        checkboxGroupInput(inputId = "pick_indicator",
+                                                           label = "Choose Indicator:",
+                                                           choices = unique(starwars$species) # placeholder
                                                    ) # end checkboxGroupInput
                                       ), # end sidebarPanel
-                                      
-                                      mainPanel("Fill in Output",
-                                                )
-   
-                                      ), # end tabPanel 1
-                                      
-                                      tabPanel("Kelp Cover Over Time"),
-                                      tabPanel("Kelp Forest Community")
-                                    ) # end navbarPage
-                           ) # end ui
+                                    
+                                      mainPanel("OUTPUT!",
+                                                plotOutput("sw_plot") # placeholder
+                                      ) # end main panel 1 
+                                      ) #end sidebar layout 2
+                      ), # end tabpanel 2
+            
+            tabPanel("Kelp Cover Over Time",
+                     mainPanel("Fill in Output") # end main panel 3
+                     ), # end tab panel 3
+            tabPanel("Kelp Forest Community",
+                     mainPanel("Fill in Output") # end main panel 4
+                     ) # end tab panel 4
+                     ) # end navbarPage
+                     ) # end ui
 
-
+server <- function(input, output) { # placeholder from lab
+  sw_reactive <- reactive({
+    starwars %>%
+      filter(species %in% input$pick_species)
+  }) # end sw_reactive
+  
+  output$sw_plot <- renderPlot(
+    ggplot(data = sw_reactive(), aes(x = mass, y = height)) +
+      geom_point(aes(color = species))
+  ) # end output$sw_plot
+      }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
