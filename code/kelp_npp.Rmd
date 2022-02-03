@@ -1,0 +1,61 @@
+---
+title: "Master Markdown"
+author: "Conner Smith"
+date: "2/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+```{r}
+# read in the first data set
+
+kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
+kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
+```
+
+
+```{r}
+kelp_abund_sub <- kelp_abund %>%
+  clean_names() %>% 
+  select(year, site, sp_code, fronds, hld_diam) %>% 
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
+  group_by(site) %>% 
+  na_if(-99999) %>% 
+  drop_na()
+
+kelp_abundance <- ggplot(data = kelp_abund_sub, 
+                       aes(x = year, y = fronds)) +
+  geom_col(fill = "darkseagreen") +
+  theme_minimal() +
+  labs(title = "Kelp Abundance Over Time", 
+       x = "Year", y = "Kelp Fronds (number > 1m)")
+kelp_abundance
+```
+
+```{r}
+kelp_biomass <- ggplot(data = kelp_factors, 
+                       aes(x = year, y = kelp)) +
+  geom_col(fill = "darkseagreen") +
+  theme_minimal() +
+  labs(title = "Kelp Biomass Over Time", 
+       x = "Year", y = "Kelp Biomass (kg)")
+kelp_biomass
+```
+
