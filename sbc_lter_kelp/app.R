@@ -2,29 +2,38 @@ library(shiny)
 library(tidyverse)
 library(bslib)
 
-
 # Read in the raw data 
 
 #kelp_factors <- read_csv
 
-# Define UI for application that draws a histogram
+# Define UI for application
 ui <- fluidPage(
+  theme = bs_theme(bootswatch = "minty"),
         navbarPage("Dynamics of Santa Barbara Kelp Forests",
             tabPanel("Project Overview", # Setting project description page
-                     mainPanel("Fill in Description")
-                     ), # End tab panel 1
+                     mainPanel(
+                       fluidRow(
+                       column(6,
+                              "This app seeks to visualize the key factors influencing 
+                               kelp forest health in Santa Barbara"),
+                       column(5,
+                            img(src = 'garbaldi.jpg', 
+                                     height =200, width = 300))
+                       ) # end fluidRow 1
+                       )# end main panel 1
+                       ), # End tab panel 1
             
             tabPanel("Factors Influencing Kelp Productivity", #start panel 2
                       sidebarLayout(# Adding sidebar selector for factors
-                                    sidebarPanel("WIDGETS",
-                                        checkboxGroupInput(inputId = "pick_indicator",
-                                                           label = "Choose Indicator:",
-                                                           choices = unique(starwars$species) # placeholder
+                                    sidebarPanel(
+                                        checkboxGroupInput(inputId = "pick_site",
+                                                           label = "Choose Site:",
+                                                           choices = unique(kelp_abund_sub$site) # drawing sites as filter option
                                                    ) # end checkboxGroupInput
                                       ), # end sidebarPanel
                                     
-                                      mainPanel("OUTPUT!",
-                                                plotOutput("sw_plot") # placeholder
+                                      mainPanel(
+                                                plotOutput("abund_plot") # placeholder
                                       ) # end main panel 1 
                                       ) #end sidebar layout 2
                       ), # end tabpanel 2
@@ -38,16 +47,21 @@ ui <- fluidPage(
                      ) # end navbarPage
                      ) # end ui
 
+# Create server object 
+
 server <- function(input, output) { # placeholder from lab
-  sw_reactive <- reactive({
-    starwars %>%
-      filter(species %in% input$pick_species)
-  }) # end sw_reactive
+  abund_reactive <- reactive({
+    kelp_abund_sub %>%
+      filter(site %in% input$pick_site)
+  }) # end abund_reactive
   
-  output$sw_plot <- renderPlot(
-    ggplot(data = sw_reactive(), aes(x = mass, y = height)) +
-      geom_point(aes(color = species))
-  ) # end output$sw_plot
+  output$abund_plot <- renderPlot(
+    ggplot(data = abund_reactive(), 
+           aes(x = year, y = fronds)) +
+      geom_col(aes(fill = site)) +
+      theme_minimal() +
+      labs(title = "Kelp Abundance Over Time", 
+           x = "Year", y = "Kelp Fronds (number > 1m)")) # end output$abund_plot
       }
 
 # Run the application 
