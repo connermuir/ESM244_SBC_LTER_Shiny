@@ -11,13 +11,15 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(janitor)
+library(cowplot)
 ```
 
 ```{r}
-# read in the first data set
+# read in the first data sets
 
 kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
 kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
+kelp_density <- read_csv(here('data', 'all_species_biomass.csv'))
 ```
 
 
@@ -50,12 +52,26 @@ kelp_abundance
 ```
 
 ```{r}
-kelp_biomass <- ggplot(data = kelp_factors, 
+kelp_factors_sub <- kelp_factors %>% 
+  filter(site_id %in% c(267:298)) %>% 
+  group_by(site_id, year)
+
+kelp_biomass_plot <- ggplot(data = kelp_factors_sub, 
                        aes(x = year, y = kelp)) +
   geom_col(fill = "darkseagreen") +
   theme_minimal() +
-  labs(title = "Kelp Biomass Over Time", 
-       x = "Year", y = "Kelp Biomass (kg)")
-kelp_biomass
+  labs(title = "\nKelp Biomass Over Time\n", 
+       x = "Year", y = "\nKelp Biomass (kg)\n")
+
+no3_plot <- ggplot(data = kelp_factors_sub, 
+                       aes(x = year, y = no3)) +
+  geom_smooth(color = "coral") +
+  theme_minimal() +
+  labs(title = "\nNitrate Concentration Over Time\n", 
+       x = "Year", y = "\nNitrate COncentration (uM/L)\n")
+no3_plot
+
+nitrate_kelp <- plot_grid (kelp_biomass_plot, no3_plot)
+nitrate_kelp
 ```
 
