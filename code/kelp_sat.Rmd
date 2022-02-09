@@ -1,0 +1,55 @@
+---
+title: "Tab 1 - Satellite Kelp Data"
+author: "Conner Smith"
+date: "2/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ncdf4)
+library(tidyverse)
+library(sf)
+library(raster)
+library(rgdal)
+library(here)
+```
+
+```{r}
+## Read in the dataset from: https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-sbc&identifier=74.
+
+## This is time series data of kelp canopy using satellite imagery and will be updated regularly. The file is a .ns so we use the 'ncdf4' package. 
+
+## HELP: Need to read this direct off web
+
+#nc_kelp_raw <- nc_open(here('data', 'LandsatkelpBiomass_2021_v2_withmetadata.nc'))
+
+## Not sure how to create this data frame, but these are the variables we need. 
+
+#station <- ncvar_get(nc_kelp_raw, "station")
+#lon <- ncvar_get(nc_kelp_raw, "longitude")
+#lat <- ncvar_get(nc_kelp_raw, "latitude")
+#year <- ncvar_get(nc_kelp_raw, "year")
+#quarter <- ncvar_get(nc_kelp_raw, "quarter")
+
+## This is the main variable we want
+#biomass <- ncvar_get(nc_kelp_raw, "biomass")
+
+
+```
+
+```{r}
+# Placeholder map data until .ns can be figured out 
+
+# This is the kelp biomass from all sites, will bind the coordinates for the sites after 
+
+kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
+
+sites <- read_csv(here('data', 'site_locations.csv'))
+
+combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")
+
+# This worked! We now have a proxy for kelp biomass by site including coordinates. 
+```
+
