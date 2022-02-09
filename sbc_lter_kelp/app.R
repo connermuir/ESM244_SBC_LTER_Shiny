@@ -1,6 +1,7 @@
 library(shiny)
 library(tidyverse)
 library(bslib)
+library(tmap)
 
 # Read in the raw data 
 
@@ -22,7 +23,11 @@ ui <- fluidPage(
                        ) # end fluidRow 1
                        )# end main panel 1
                        ), # End tab panel 1
-            
+            tabPanel("Kelp Cover Over Time", # start tab panel 2
+                     mainPanel(
+                       tmapOutput("tmap_kelp")
+                       )# end main panel 2
+                     ), # end tab panel 2
             tabPanel("Factors Influencing Kelp Productivity", #start panel 2
                       sidebarLayout(# Adding sidebar selector for factors
                                     sidebarPanel(
@@ -38,9 +43,7 @@ ui <- fluidPage(
                                       ) #end sidebar layout 2
                       ), # end tabpanel 2
             
-            tabPanel("Kelp Cover Over Time",
-                     mainPanel("Fill in Output") # end main panel 3
-                     ), # end tab panel 3
+          
             tabPanel("Kelp Forest Community",
                      mainPanel("Fill in Output") # end main panel 4
                      ) # end tab panel 4
@@ -54,6 +57,15 @@ server <- function(input, output) { # placeholder from lab
     kelp_abund_sub %>%
       filter(site %in% input$pick_site)
   }) # end abund_reactive
+  
+  # Output for tmap kelp plot 
+  
+  output$tmap_kelp <- renderTmap({
+    tm_shape(kelp_sb_sf) +
+      tm_dots()
+  })
+  
+  # Output for LTER specific dive abundance 
   
   output$abund_plot <- renderPlot(
     ggplot(data = abund_reactive(), 
