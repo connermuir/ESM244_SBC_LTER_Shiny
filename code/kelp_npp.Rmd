@@ -1,5 +1,5 @@
 ---
-title: "Master Markdown"
+title: "Kelp Factors"
 author: "Conner Smith"
 date: "2/2/2022"
 output: html_document
@@ -26,7 +26,6 @@ kelp_density <- read_csv(here('data', 'all_species_biomass.csv'))
 ```{r}
 kelp_abund_sub <- kelp_abund %>%
   clean_names() %>% 
-  select(year, site, sp_code, fronds, hld_diam) %>% 
   mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
                           site == 'NAPL' ~ 'Naples',
                           site == 'MOHK' ~ 'Mohawk',
