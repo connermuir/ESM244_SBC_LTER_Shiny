@@ -3,13 +3,18 @@ library(tidyverse)
 library(bslib)
 library(tmap)
 
-# Read in the raw data 
+# Set up a custom theme 
 
-#kelp_factors <- read_csv
+my_theme <- bs_theme(
+  bg = "#F0FFF0",
+  fg = 'black',
+  primary = 'black',
+  base_fonts = font_google('Poppins')
+)
 
 # Define UI for application
 ui <- fluidPage(
-  theme = bs_theme(bootswatch = "minty"),
+  theme = my_theme,
         navbarPage("Dynamics of Santa Barbara Kelp Forests",
             tabPanel("Project Overview", # Setting project description page
                      mainPanel(
