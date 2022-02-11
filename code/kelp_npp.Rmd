@@ -19,7 +19,7 @@ library(cowplot)
 
 kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
 kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
-kelp_density <- read_csv(here('data', 'all_species_biomass.csv'))
+
 ```
 
 
