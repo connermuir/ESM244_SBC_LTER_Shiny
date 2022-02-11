@@ -17,6 +17,7 @@ library(cowplot)
 # read in the first data sets
 
 kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
+
 kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
 
 ```
