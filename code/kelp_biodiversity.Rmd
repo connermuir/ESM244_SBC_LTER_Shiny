@@ -7,5 +7,14 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+
+```
+
+```{r}
+fish <- read_csv(here("data", "fish_abund.csv"))
+
+inverts <- read_csv(here("data", "inverts_abund.csv"))
 ```
 
