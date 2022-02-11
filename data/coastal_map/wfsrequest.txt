@@ -1,0 +1,1 @@
+http://geoserver.geodata.library.ucsb.edu/geoserver/wfs?outputformat=SHAPE-ZIP&request=GetFeature&service=wfs&srsName=EPSG%3A4326&typeName=public%3A3853-s3_2004_s3_coastal_zone&version=2.0.0
