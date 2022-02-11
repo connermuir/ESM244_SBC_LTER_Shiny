@@ -76,7 +76,8 @@ ggplot(data = kelp_sb_sf) +
 
 # Reading in the coastal polygon shp file for SB from here: http://geodata.library.ucsb.edu/catalog/3853-s3_2002_s3_reg_coastal 
 
-sb_map <- read_sf(here('data', 'coastal_map', '3853-s3_2002_s3_reg_coastal.shp'))
+sb_map <- read_sf(here('data', 'coastal_map',
+                       '3853-s3_2004_s3_coastal_zone.shp'))
 
 sb_map_transform <- st_transform(sb_map, 4326)
 
