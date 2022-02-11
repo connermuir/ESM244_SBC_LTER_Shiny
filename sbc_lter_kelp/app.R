@@ -46,7 +46,7 @@ ui <- fluidPage(
                                                 plotOutput("abund_plot") # placeholder
                                       ) # end main panel 1 
                                       ) #end sidebar layout 2
-                      ), # end tabpanel 2
+                      ), # end tabpanel 3
             
           
             tabPanel("Kelp Forest Community",
@@ -57,7 +57,10 @@ ui <- fluidPage(
 
 # Create server object 
 
-server <- function(input, output) { # placeholder from lab
+server <- function(input, output) { # 
+  
+  # Function for LTER Site Kelp Surveys 
+  
   abund_reactive <- reactive({
     kelp_abund_sub %>%
       filter(site %in% input$pick_site)
@@ -70,7 +73,7 @@ server <- function(input, output) { # placeholder from lab
       tm_dots()
   })
   
-  # Output for LTER specific dive abundance 
+  # Output for LTER Site Kelp Surveys 
   
   output$abund_plot <- renderPlot(
     ggplot(data = abund_reactive(), 
