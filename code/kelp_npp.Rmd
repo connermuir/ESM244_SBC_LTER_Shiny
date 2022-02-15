@@ -48,9 +48,14 @@ kelp_abundance <- ggplot(data = kelp_abund_sub,
   labs(title = "Kelp Abundance Over Time", 
        x = "Year", y = "Kelp Fronds (number > 1m)")
 kelp_abundance
+
+# this is the graph for specific LTER sites 
 ```
 
 ```{r}
+# This takes data collected across CA and filters down fro SB site range 
+# The range DOES NOT include islands sites 
+
 kelp_factors_sub <- kelp_factors %>% 
   filter(site_id %in% c(267:298)) %>% 
   group_by(site_id, year)
@@ -72,5 +77,25 @@ no3_plot
 
 nitrate_kelp <- plot_grid (kelp_biomass_plot, no3_plot)
 nitrate_kelp
+
+# Now we will try to show these on the same plot with different y axes 
+
+#First we need to estimate a scaling coefficient between the numbers, kelp biomass numbers generally 4 orders of magnitude larger (e.g. 10^7)
+
+coeff <- 10^7
+#This is the best scaling factor after trying a few 
+
+ggplot(data = kelp_factors_sub, 
+                       aes(x = year, y = no3)) +
+  # now integrate the nitrogen curve with the kelp
+  geom_smooth(color = "coral") + #now we need to scale the kelp axis  
+  geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+  scale_y_continuous(
+    # Features of the first axis
+    name = "NO3 Concentration (uM/L)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
+  ) +
+  theme_bw()
 ```
 
