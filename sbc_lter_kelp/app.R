@@ -33,8 +33,8 @@ ui <- fluidPage(
                        tmapOutput("tmap_kelp")
                        )# end main panel 2
                      ), # end tab panel 2
-            tabPanel("Factors Influencing Kelp Productivity", #start panel 2
-                      sidebarLayout(# Adding sidebar selector for factors
+            tabPanel("Factors Influencing Kelp Productivity", #start panel 3
+                     sidebarLayout(# Adding sidebar selector for factors
                                     sidebarPanel(
                                         checkboxGroupInput(inputId = "pick_site",
                                                            label = "Choose Site:",
@@ -43,8 +43,12 @@ ui <- fluidPage(
                                       ), # end sidebarPanel
                                     
                                       mainPanel(
-                                                plotOutput("abund_plot") # placeholder
-                                      ) # end main panel 1 
+                                        selectInput("plotnumber", "Select Plot:",
+                                                    c("Abundance by Site",
+                                                      "Nitrate Concentration"),
+                                                    selected = "Abundance by Site"), #trying multiple options, end select
+                                                plotOutput('whichplot')
+                                      ) # end main panel 2
                                       ) #end sidebar layout 2
                       ), # end tabpanel 3
             
@@ -58,6 +62,8 @@ ui <- fluidPage(
 # Create server object 
 
 server <- function(input, output) { # 
+  
+  # Need data frames here !!! 
   
   # Function for LTER Site Kelp Surveys 
   
@@ -75,14 +81,32 @@ server <- function(input, output) { #
   
   # Output for LTER Site Kelp Surveys 
   
-  output$abund_plot <- renderPlot(
-    ggplot(data = abund_reactive(), 
+output$whichplot <- renderPlot({
+  if(input$plotnumber == "Abundance by Site"){
+    plot = ggplot(data = abund_reactive(), 
            aes(x = year, y = fronds)) +
       geom_col(aes(fill = site)) +
       theme_minimal() +
       labs(title = "Kelp Abundance Over Time", 
-           x = "Year", y = "Kelp Fronds (number > 1m)")) # end output$abund_plot
-      }
+           x = "Year", y = "Kelp Fronds (number > 1m)")} # end abund_plot option
+  if(input$plotnumber == "Nitrate Concentration"){
+    plot = ggplot(data = kelp_factors_sub, 
+           aes(x = year, y = no3)) +
+      # now integrate the nitrogen curve with the kelp
+      geom_smooth(color = "coral") + #now we need to scale the kelp axis  
+      geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+      scale_y_continuous(
+        # Features of the first axis
+        name = "NO3 Concentration (uM/L)",
+        # Add a second axis and specify its features
+        sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
+      ) +
+      theme_bw()
+  } # end second option 
+  plot # call the option 
+  }) # end this function for selecting factor graphs 
+  
+} # end all sever 
 
 # Run the application 
 shinyApp(ui = ui, server = server)
