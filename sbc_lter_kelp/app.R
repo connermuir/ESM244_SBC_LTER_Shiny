@@ -2,6 +2,7 @@ library(shiny)
 library(tidyverse)
 library(bslib)
 library(tmap)
+library(sf)
 
 # Set up a custom theme 
 
@@ -63,9 +64,21 @@ ui <- fluidPage(
 
 server <- function(input, output) { # 
   
-  # Need data frames here !!! 
+# Need data frames here !!! 
   
-  # Function for LTER Site Kelp Surveys 
+# Data for panel 1
+kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
+sites <- read_csv(here('data', 'site_locations.csv'))
+combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")  
+ 
+combined_kelp_sb <- combined_kelp %>% 
+  filter(site_id %in% c(267:298)) %>% 
+  group_by(site_id)
+
+kelp_sb_sf <- combined_kelp_sb %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+
+# Function for LTER Site Kelp Surveys 
   
   abund_reactive <- reactive({
     kelp_abund_sub %>%
