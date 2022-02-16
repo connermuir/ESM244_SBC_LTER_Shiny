@@ -3,6 +3,35 @@ library(tidyverse)
 library(bslib)
 library(tmap)
 library(sf)
+library(here)
+library(janitor)
+
+## DATA 
+#App fails unless this data set is included here 
+
+kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
+kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
+
+kelp_abund_sub <- kelp_abund %>%
+  clean_names() %>% 
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
+  group_by(site) %>% 
+  na_if(-99999) %>% 
+  drop_na()
+
+kelp_factors_sub <- kelp_factors %>% 
+  filter(site_id %in% c(267:298)) %>% 
+  group_by(site_id, year)
 
 # Set up a custom theme 
 
@@ -80,31 +109,7 @@ kelp_sb_sf <- combined_kelp_sb %>%
 
 # End Panel 1 Data 
 
-# Start panel 2 data
-
-kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
-kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
-
-kelp_abund_sub <- kelp_abund %>%
-  clean_names() %>% 
-  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
-                          site == 'NAPL' ~ 'Naples',
-                          site == 'MOHK' ~ 'Mohawk',
-                          site == 'IVEE' ~ 'Isla Vista',
-                          site == 'AQUE' ~ 'Arroyo Quemado',
-                          site == 'ABUR' ~ 'Arroyo Burro',
-                          site == 'AHND' ~ 'Arroyo Hondo',
-                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
-                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
-                          site == 'BULL' ~ 'Bulito',
-                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
-  group_by(site) %>% 
-  na_if(-99999) %>% 
-  drop_na()
-
-kelp_factors_sub <- kelp_factors %>% 
-  filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id, year)
+# Additional panel 2 data
 
 coeff <- 10^7
 #This is the best scaling factor for the nitrate graph after trying a few 

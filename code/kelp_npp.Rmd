@@ -85,7 +85,7 @@ nitrate_kelp
 coeff <- 10^7
 #This is the best scaling factor after trying a few 
 
-ggplot(data = kelp_factors_sub, 
+comnined_no3 -> ggplot(data = kelp_factors_sub, 
                        aes(x = year, y = no3)) +
   # now integrate the nitrogen curve with the kelp
   geom_smooth(color = "coral") + #now we need to scale the kelp axis  
