@@ -11,6 +11,7 @@ library(tidyverse)
 library(here)
 library(janitor)
 library(cowplot)
+library(plotly)
 ```
 
 ```{r}
@@ -85,7 +86,7 @@ nitrate_kelp
 coeff <- 10^7
 #This is the best scaling factor after trying a few 
 
-comnined_no3 -> ggplot(data = kelp_factors_sub, 
+combined_no3 <- ggplot(data = kelp_factors_sub, 
                        aes(x = year, y = no3)) +
   # now integrate the nitrogen curve with the kelp
   geom_smooth(color = "coral") + #now we need to scale the kelp axis  
@@ -97,5 +98,24 @@ comnined_no3 -> ggplot(data = kelp_factors_sub,
     sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
   ) +
   theme_bw()
+```
+
+```{r}
+# Creating anothe rgraph for wave height 
+
+combined_waves <- ggplot(data = kelp_factors_sub, 
+                       aes(x = year, y = waves)) +
+  # now integrate the wave curve with the kelp
+  geom_smooth(color = "cadetblue3") + #now we need to scale the kelp axis  
+  geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+  scale_y_continuous(
+    # Features of the first axis
+    name = "Average Wave Height (m)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
+  ) +
+  theme_bw()
+ggplotly(combined_waves)
+
 ```
 
