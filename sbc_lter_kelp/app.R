@@ -5,6 +5,7 @@ library(tmap)
 library(sf)
 library(here)
 library(janitor)
+library(thematic)
 
 ## DATA 
 #App fails unless this data set is included here 
@@ -39,8 +40,9 @@ my_theme <- bs_theme(
   bg = "#F0FFF0",
   fg = 'black',
   primary = 'black',
-  base_fonts = font_google('Poppins')
-)
+  base_fonts = font_google('Poppins'),
+  version = 4, bootswatch = "sandstone")
+
 
 # Define UI for application
 ui <- fluidPage(
@@ -68,7 +70,8 @@ ui <- fluidPage(
                                     sidebarPanel(
                                         checkboxGroupInput(inputId = "pick_site",
                                                            label = "Choose Site:",
-                                                           choices = unique(kelp_abund_sub$site) # drawing sites as filter option
+                                                           choices = unique(kelp_abund_sub$site),
+                                                           selected = "Naples" # This is what is selected automatically
                                                    ) # end checkboxGroupInput
                                       ), # end sidebarPanel
                                     
@@ -156,6 +159,8 @@ output$whichplot <- renderPlot({
   }) # end this function for selecting factor graphs 
   
 } # end all sever 
+
+thematic_shiny()
 
 # Run the application 
 shinyApp(ui = ui, server = server)
