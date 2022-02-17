@@ -6,6 +6,7 @@ library(sf)
 library(here)
 library(janitor)
 library(thematic)
+library(plotly)
 
 ## DATA 
 #App fails unless this data set is included here 
@@ -78,9 +79,17 @@ ui <- fluidPage(
                                       mainPanel(
                                         selectInput("plotnumber", "Select Plot:",
                                                     c("Abundance by Site",
-                                                      "Nitrate Concentration"),
+                                                      "Nitrate Concentration",
+                                                      "Wave Height"),
                                                     selected = "Abundance by Site"), #trying multiple options, end select
-                                                plotOutput('whichplot')
+                                                plotOutput('whichplot'),
+                                        sliderInput("year_selector", "Select Year Range",
+                                                    min = min(kelp_factors_sub$year),
+                                                    max = max(kelp_factors_sub$year),
+                                                    value = c(1987,2019),
+                                                    step = 1,
+                                                    sep = ""
+                                                    )
                                       ) # end main panel 2
                                       ) #end sidebar layout 2
                       ), # end tabpanel 3
@@ -115,7 +124,7 @@ kelp_sb_sf <- combined_kelp_sb %>%
 # Additional panel 2 data
 
 coeff <- 10^7
-#This is the best scaling factor for the nitrate graph after trying a few 
+#This is the best scaling factor for the nitrate and wave graph after trying a few 
 
 # Function for LTER Site Kelp Surveys 
   
@@ -123,6 +132,12 @@ coeff <- 10^7
     kelp_abund_sub %>%
       filter(site %in% input$pick_site)
   }) # end abund_reactive
+  
+  factors_reactive <- reactive({
+    kelp_factors_sub %>% 
+      filter(year %in% input$year_selector[1]:input$year_selector[2])
+  })
+  # output for date slider
   
   # Output for tmap kelp plot 
   
@@ -141,8 +156,9 @@ output$whichplot <- renderPlot({
       theme_minimal() +
       labs(title = "Kelp Abundance Over Time", 
            x = "Year", y = "Kelp Fronds (number > 1m)")} # end abund_plot option
-  if(input$plotnumber == "Nitrate Concentration"){
-    plot = ggplot(data = kelp_factors_sub, 
+ 
+   if(input$plotnumber == "Nitrate Concentration"){
+    plot = ggplot(data = factors_reactive(), 
            aes(x = year, y = no3)) +
       # now integrate the nitrogen curve with the kelp
       geom_smooth(color = "coral") + #now we need to scale the kelp axis  
@@ -153,8 +169,23 @@ output$whichplot <- renderPlot({
         # Add a second axis and specify its features
         sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
       ) +
-      theme_bw()
-  } # end second option 
+      theme_minimal()
+  } # end second option (nitrate)
+  
+  if(input$plotnumber == "Wave Height"){
+    plot = ggplot(data = factors_reactive(), 
+                  aes(x = year, y = waves)) +
+      # now integrate the wave curve with the kelp
+      geom_smooth(color = "cadetblue3") + #now we need to scale the kelp axis  
+      geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+      scale_y_continuous(
+        # Features of the first axis
+        name = "Average Wave Height (m)",
+        # Add a second axis and specify its features
+        sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
+      ) +
+      theme_minimal()
+  }
   plot # call the option 
   }) # end this function for selecting factor graphs 
   
