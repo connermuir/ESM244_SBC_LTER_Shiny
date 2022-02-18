@@ -12,6 +12,8 @@ library(here)
 library(janitor)
 library(cowplot)
 library(plotly)
+library(data.table)
+library(lubridate)
 ```
 
 ```{r}
@@ -117,5 +119,24 @@ combined_waves <- ggplot(data = kelp_factors_sub,
   theme_bw()
 ggplotly(combined_waves)
 
+```
+
+```{r}
+# Attempting to pull temp data from link: 
+
+temp_big <- fread('https://pasta.lternet.edu/package/data/eml/knb-lter-sbc/13/26/d707a45a2cd6eee1d016d99844d537da')
+
+# This worked: Note: fread was much faster then read_csv
+
+temp_sub <- temp_big %>% 
+  clean_names() %>% 
+  dplyr::select(site, date_local, temp_c) %>% 
+  mutate(month = month(date_local)) %>% 
+  mutate(year = year(date_local))
+  
+temp_sum <- temp_sub %>% 
+  group_by(month, year) %>% 
+  summarize(month_avg = mean(temp_c))
+  
 ```
 
