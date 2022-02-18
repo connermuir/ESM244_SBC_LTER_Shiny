@@ -15,6 +15,7 @@ library(raster)
 library(rgdal)
 library(here)
 library(tmap)
+library(stars)
 ```
 
 ```{r}
@@ -24,21 +25,48 @@ library(tmap)
 
 ## HELP: Need to read this direct off web
 
-#nc_kelp_raw <- nc_open(here('data', 'LandsatkelpBiomass_2021_v2_withmetadata.nc'))
+nc_kelp_raw <- nc_open(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
 
-## Not sure how to create this data frame, but these are the variables we need. 
+year <-ncvar_get(nc_kelp_raw,"year")
+quarter <- ncvar_get(nc_kelp_raw,"quarter")
+  
+lon <- ncvar_get(nc_kelp_raw,"longitude")
+lat <- ncvar_get(nc_kelp_raw,"latitude")
+biomass<-ncvar_get(nc_kelp_raw,"biomass") 
 
-#station <- ncvar_get(nc_kelp_raw, "station")
-#lon <- ncvar_get(nc_kelp_raw, "longitude")
-#lat <- ncvar_get(nc_kelp_raw, "latitude")
-#year <- ncvar_get(nc_kelp_raw, "year")
-#quarter <- ncvar_get(nc_kelp_raw, "quarter")
 
-## This is the main variable we want
-#biomass <- ncvar_get(nc_kelp_raw, "biomass")
+time<-data.frame(year,quarter)
+
+# Now we have the time data in its own data frame thanks to Li, 152 is the time stamp for Q4 of 2021
+
+
+df_li <- data.frame(lat,lon,biomass=data.frame(biomass)[,152]) %>%
+  filter(!is.na(biomass)) %>%
+  filter(lat>=33.847062&lat<=34.100458&lon>=-120.291726&lon<=-119.924374) %>%
+  filter(biomass > 0) # too many values if 0s are included 
+
+# Providing a coordinate range for SB region (this may actually jsut be the islands), still has some NAs, can't drop_na or all observations disappear 
+
+# try to make a sf and fixed map from this 
+
+kelp_sat_sf <- df_li %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+
+st_crs(kelp_sat_sf) <- 4326
+
+
+tmap_mode('view') 
+tmap_kelp_sat <- 
+  tm_shape(kelp_sat_sf) +
+  tm_legend(title = "Santa Cruz Kelp Biomass in 2021 (kg)") +
+  tm_dots('biomass', palette = 'BuGn')
+tmap_kelp_sat
+
+#This works! Kelp values for one quarter/year on santa rosa 
 
 
 ```
+
 
 ```{r}
 # Placeholder map data until .ns can be figured out 
