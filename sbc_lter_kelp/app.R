@@ -2,6 +2,71 @@ library(shiny)
 library(tidyverse)
 library(bslib)
 library(tmap)
+library(sf)
+library(here)
+library(janitor)
+library(thematic)
+library(plotly)
+
+## DATA 
+#App fails unless this data set is included here 
+
+# Map data first:
+
+nc_kelp_raw <- nc_open(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
+
+year <-ncvar_get(nc_kelp_raw,"year")
+quarter <- ncvar_get(nc_kelp_raw,"quarter")
+
+lon <- ncvar_get(nc_kelp_raw,"longitude")
+lat <- ncvar_get(nc_kelp_raw,"latitude")
+biomass<-ncvar_get(nc_kelp_raw,"biomass") 
+
+time<-data.frame(year,quarter)
+
+# Now we have the time data in its own data frame thanks to Li, 152 is the time stamp for Q4 of 2021
+
+df_li <- data.frame(lat,lon,biomass=data.frame(biomass)[,152]) %>%
+  filter(!is.na(biomass)) %>%
+  filter(lat>=33.847062&lat<=34.100458&lon>=-120.291726&lon<=-119.924374) %>%
+  filter(biomass > 0) # too many values if 0s are included 
+
+# Providing a coordinate range for SB region (this may actually jsut be the islands), still has some NAs, can't drop_na or all observations disappear 
+
+# try to make a sf and fixed map from this 
+
+kelp_sat_sf <- df_li %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+
+st_crs(kelp_sat_sf) <- 4326
+
+#End subset map data
+
+#Start other tabs data
+
+kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
+kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
+
+kelp_abund_sub <- kelp_abund %>%
+  clean_names() %>% 
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
+  group_by(site) %>% 
+  na_if(-99999) %>% 
+  drop_na()
+
+kelp_factors_sub <- kelp_factors %>% 
+  filter(site_id %in% c(267:298)) %>% 
+  group_by(site_id, year)
 
 # Set up a custom theme 
 
@@ -9,8 +74,9 @@ my_theme <- bs_theme(
   bg = "#F0FFF0",
   fg = 'black',
   primary = 'black',
-  base_fonts = font_google('Poppins')
-)
+  base_fonts = font_google('Poppins'),
+  version = 4, bootswatch = "sandstone")
+
 
 # Define UI for application
 ui <- fluidPage(
@@ -19,32 +85,97 @@ ui <- fluidPage(
             tabPanel("Project Overview", # Setting project description page
                      mainPanel(
                        fluidRow(
-                       column(6,
-                              "This app seeks to visualize the key factors influencing 
-                               kelp forest health in Santa Barbara"),
-                       column(5,
+                       column(10,
+                              strong("This app seeks to visualize the key factors influencing kelp forest health in Santa Barbara. It includes the following tabs:"),
+                              br(),
+                              br(),
+                              h3("Kelp Canopy:"), 
+                              "This is a visualization of quarterly kelp biomass estimates since 1984. Data is collected based on satellite imaging estimating giant kelp canopy biomass. Biomass data (wet weight, kg) are given for individual 30 x 30 meter pixels in the coastal areas extending from near Ano Nuevo, CA through the southern range limit in Baja California (including offshore islands), representing the range where giant kelp is the dominant canopy forming species.",
+                              br(),
+                              br(),
+                              strong("Data Citation:"),
+                              em("Bell, T, K. Cavanaugh, D. Siegel. 2022. SBC LTER: Time series of quarterly NetCDF files of kelp biomass in the canopy from Landsat 5, 7 and 8, since 1984 (ongoing) ver 15. Environmental Data Initiative."),
+                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.74", 
+                                     "Link"),
+                              br(),
+                              br(),
+                              h3("Abiotic Factors:"), 
+                              "This combines several SBC LTER datasets to visualize kelp abundance across the region and at specific sites compared to abiotic factors influencing productivity. Selected factors include temperature, nitrate concentrations, and wave height.",
+                              br(),
+                              br(),
+                              strong("Data Citations:"),
+                              br(),
+                              strong("Kelp Anundance at LTER Sites:"),
+                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Abundance and size of Giant Kelp (Macrocystis Pyrifera), ongoing since 2000 ver 25. Environmental Data Initiative."),
+                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.18", 
+                                     "Link"),
+                              br(),
+                              br(),
+                              strong("Temperature at LTER Sites:"),
+                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Bottom Temperature: Continuous water temperature, ongoing since 2000 ver 26. Environmental Data Initiative."),
+                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.13", 
+                                     "Link"),
+                              br(),
+                              br(),
+                              strong("Abiotic Factors Regionally:"),
+                              em("Bell, T, K. Cavanaugh, D. Reuman, M. Castorani, L. Sheppard, J. Walter. 2021. SBC LTER: REEF: Macrocystis pyrifera biomass and environmental drivers in southern and central California ver 1. Environmental Data Initiative."),
+                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.144", 
+                                     "Link"),
+                              br(),
+                              br(),
+                              h3("Kelp Forest Community:"), 
+                              "This combines several additional SBC LTER datasets to visualize abundance of species dependent on kelp across the region and at specific sites compared to overall kelp forest health. Selected species include .... PANEL 3 TBD.",
+                              br(),
+                              br(),
+                              strong("Data Citations:"),
+                              br(),
+                              strong("Fish Abundance at LTER Sites:"),
+                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Fish abundance ver 36. Environmental Data Initiative."),
+                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.17", 
+                                     "Link"),
+                              br(),
+                              br(),
+                              strong("Invertebrate Abundance at LTER Sties:"),
+                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Invertebrate and algal density ver 28. Environmental Data Initiative."),
+                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.19", 
+                                     "Link"),
+                              ),
+                       column(2,
                             img(src = 'garbaldi.jpg', 
                                      height =200, width = 300))
                        ) # end fluidRow 1
                        )# end main panel 1
                        ), # End tab panel 1
-            tabPanel("Kelp Cover Over Time", # start tab panel 2
+            tabPanel("Kelp Canpoy", # start tab panel 2
                      mainPanel(
-                       tmapOutput("tmap_kelp")
+                       tmapOutput("tmap_kelp_sc")
                        )# end main panel 2
                      ), # end tab panel 2
-            tabPanel("Factors Influencing Kelp Productivity", #start panel 2
-                      sidebarLayout(# Adding sidebar selector for factors
+            tabPanel("Abiotic Factors", #start panel 3
+                     sidebarLayout(# Adding sidebar selector for factors
                                     sidebarPanel(
                                         checkboxGroupInput(inputId = "pick_site",
                                                            label = "Choose Site:",
-                                                           choices = unique(kelp_abund_sub$site) # drawing sites as filter option
+                                                           choices = unique(kelp_abund_sub$site),
+                                                           selected = "Naples" # This is what is selected automatically
                                                    ) # end checkboxGroupInput
                                       ), # end sidebarPanel
                                     
                                       mainPanel(
-                                                plotOutput("abund_plot") # placeholder
-                                      ) # end main panel 1 
+                                        selectInput("plotnumber", "Select Plot:",
+                                                    c("Abundance by Site",
+                                                      "Nitrate Concentration",
+                                                      "Wave Height"),
+                                                    selected = "Abundance by Site"), #trying multiple options, end select
+                                                plotOutput('whichplot'),
+                                        sliderInput("year_selector", "Select Year Range",
+                                                    min = min(kelp_factors_sub$year),
+                                                    max = max(kelp_factors_sub$year),
+                                                    value = c(1987,2019),
+                                                    step = 1,
+                                                    sep = ""
+                                                    )
+                                      ) # end main panel 2
                                       ) #end sidebar layout 2
                       ), # end tabpanel 3
             
@@ -63,30 +194,94 @@ ui <- fluidPage(
 
 server <- function(input, output) { # 
   
-  # Function for LTER Site Kelp Surveys 
+# Need data frames here !!! 
+  
+# Data for panel 1
+kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
+sites <- read_csv(here('data', 'site_locations.csv'))
+combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")  
+ 
+combined_kelp_sb <- combined_kelp %>% 
+  filter(site_id %in% c(267:298)) %>% 
+  group_by(site_id)
+
+kelp_sb_sf <- combined_kelp_sb %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+
+# End Panel 1 Data 
+
+# Additional panel 2 data
+
+coeff <- 10^7
+#This is the best scaling factor for the nitrate and wave graph after trying a few 
+
+# Function for LTER Site Kelp Surveys 
   
   abund_reactive <- reactive({
     kelp_abund_sub %>%
       filter(site %in% input$pick_site)
   }) # end abund_reactive
   
+  factors_reactive <- reactive({
+    kelp_factors_sub %>% 
+      filter(year %in% input$year_selector[1]:input$year_selector[2])
+  })
+  # output for date slider
+  
   # Output for tmap kelp plot 
   
-  output$tmap_kelp <- renderTmap({
-    tm_shape(kelp_sb_sf) +
-      tm_dots()
+  output$tmap_kelp_sc <- renderTmap({
+      tm_shape(kelp_sat_sf) +
+      tm_legend(title = "Santa Cruz Kelp Biomass in 2021 (kg)") +
+      tm_dots('biomass', palette = 'BuGn')
   })
   
   # Output for LTER Site Kelp Surveys 
   
-  output$abund_plot <- renderPlot(
-    ggplot(data = abund_reactive(), 
+output$whichplot <- renderPlot({
+  if(input$plotnumber == "Abundance by Site"){
+    plot = ggplot(data = abund_reactive(), 
            aes(x = year, y = fronds)) +
       geom_col(aes(fill = site)) +
       theme_minimal() +
       labs(title = "Kelp Abundance Over Time", 
-           x = "Year", y = "Kelp Fronds (number > 1m)")) # end output$abund_plot
-      }
+           x = "Year", y = "Kelp Fronds (number > 1m)")} # end abund_plot option
+ 
+   if(input$plotnumber == "Nitrate Concentration"){
+    plot = ggplot(data = factors_reactive(), 
+           aes(x = year, y = no3)) +
+      # now integrate the nitrogen curve with the kelp
+      geom_smooth(color = "coral") + #now we need to scale the kelp axis  
+      geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+      scale_y_continuous(
+        # Features of the first axis
+        name = "NO3 Concentration (uM/L)",
+        # Add a second axis and specify its features
+        sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
+      ) +
+      theme_minimal()
+  } # end second option (nitrate)
+  
+  if(input$plotnumber == "Wave Height"){
+    plot = ggplot(data = factors_reactive(), 
+                  aes(x = year, y = waves)) +
+      # now integrate the wave curve with the kelp
+      geom_smooth(color = "cadetblue3") + #now we need to scale the kelp axis  
+      geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+      scale_y_continuous(
+        # Features of the first axis
+        name = "Average Wave Height (m)",
+        # Add a second axis and specify its features
+        sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
+      ) +
+      theme_minimal()
+  }
+  plot # call the option 
+  }) # end this function for selecting factor graphs 
+  
+} # end all sever 
+
+thematic_shiny()
 
 # Run the application 
 shinyApp(ui = ui, server = server)
