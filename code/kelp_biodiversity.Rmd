@@ -9,12 +9,43 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
-
+library(janitor)
+library(plotly)
 ```
 
-```{r}
+```{r, read in data}
 fish <- read_csv(here("data", "fish_abund.csv"))
 
 inverts <- read_csv(here("data", "inverts_abund.csv"))
 ```
+
+```{r, clean data}
+fish_clean <- fish %>%
+  clean_names() %>%
+  select(year, site, sp_code, count, scientific_name, common_name, 13:21) %>%
+  mutate(across(c(1:13), na_if, -99999))
+
+inverts_clean <- inverts %>%
+  clean_names() %>%
+  select(year, site, sp_code, count, scientific_name, common_name, 13:20) %>%
+  mutate(across(c(1:13), na_if, -99999))
+```
+
+```{r, fish graph}
+fish_sub <- fish_clean %>%
+  group_by(year, site, sp_code) %>%
+  summarise(total_count = sum(count))
+
+species_plot <- ggplot(data = fish_sub, 
+                       aes(x = year, y = total_count)) +
+  geom_col(fill = "darkseagreen") +
+  theme_minimal() +
+  labs(title = "\nSpecies Count Over Time\n", 
+       x = "Year", y = "\nCount\n")
+
+ggplotly(species_plot)
+
+```
+
+
 

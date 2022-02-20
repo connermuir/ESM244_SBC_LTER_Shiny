@@ -50,7 +50,11 @@ ui <- fluidPage(
             
           
             tabPanel("Kelp Forest Community",
-                     mainPanel("Fill in Output") # end main panel 4
+                     sidebarLayout( # Adding sidevar selector for factors
+                       sidebarPanel(
+                         checkboxGroupInput(inputId = "pick_species",
+                                            label = "Choose Species",
+                                            choices = unique(fish_sub$sp                       ))) # end main panel 4
                      ) # end tab panel 4
                      ) # end navbarPage
                      ) # end ui
