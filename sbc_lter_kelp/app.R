@@ -75,7 +75,7 @@ inverts_clean <- inverts %>%
 
 inverts_sub <- inverts_clean %>%
   group_by(year, site, common_name) %>%
-  summarise(total_count = sum(count))
+  summarise(total_count = sum(count)) 
 
 # Set up a custom theme 
 
