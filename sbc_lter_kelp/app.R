@@ -62,8 +62,19 @@ fish_clean <- fish %>%
   mutate(across(c(1:13), na_if, -99999))
 
 fish_sub <- fish_clean %>%
-  group_by(year, site, sp_code) %>%
-  summarise(total_count = sum(count))
+  group_by(year, site, common_name) %>%
+  summarise(total_count = sum(count)) %>%
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay'))
 
 # Invert data
 inverts <- read_csv(here("data", "inverts_abund.csv"))
@@ -189,7 +200,26 @@ ui <- fluidPage(
                       ), # end tabpanel 3
             
             tabPanel("Kelp Forest Community", # Start panel 4
+                     sidebarLayout(# Adding sidebar selector for factors
+                       sidebarPanel(
+                         selectInput(inputId = "pick_species",
+                                            label = "Choose Species:",
+                                            choices = unique(fish_sub$common_name),
+                                            selected = NULL
+                         ) # end selectInput
+                         ), # end sidebarPanel
 
+                       mainPanel(
+                         sliderInput("fish_year_selector", "Select Year",
+                                     min = min(fish_sub$year),
+                                     max = max(fish_sub$year),
+                                     value = 2000,
+                                     step = 1,
+                                     sep = ""), # end slider input
+                         
+                         plotOutput('fishplot')
+                       ) # end main panel 
+                     ) # end sidebarLayout
                      ) # end tab panel 4
                      ) #end navbarPage
                     )# end ui
@@ -230,11 +260,16 @@ coeff <- 10^7
   })
   # output for date slider
   
-  #Output for reactive fish plot
+  # Function for Biodiversity 
   
   fish_reactive <- reactive({
     fish_sub %>% 
-      filter(sp_code %in% input$pick_species)
+      filter(common_name %in% input$pick_species)
+  }) 
+  
+  slider_reactive <- reactive({
+    fish_sub %>%
+      filter(year %in% input$fish_year_selector)
   })
   
   # Output for tmap kelp plot 
@@ -289,15 +324,14 @@ output$whichplot <- renderPlot({
   }) # end this function for selecting factor graphs 
 
 #Fish plot 
-
-output$fish_plot <- renderPlot(
-  ggplot(data = fish_reactive(), 
-         aes(x = year, y = total_count)) +
-    geom_col(fill = "darkseagreen") +
+  
+output$fishplot <- renderPlot({
+  plot = ggplot(data = fish_reactive(), aes(x = site, y = total_count)) +
+    geom_jitter(aes(color = common_name)) +
     theme_minimal() +
-    labs(title = "\nSpecies Count Over Time\n", 
-         x = "Year", y = "\nCount\n")
-  ) #end fish plot 
+    labs(x = "Site", y = "\nCount\n")
+  })
+
   
 } # end all sever 
 
