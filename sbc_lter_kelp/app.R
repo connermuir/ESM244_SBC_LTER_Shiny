@@ -65,6 +65,18 @@ fish_sub <- fish_clean %>%
   group_by(year, site, sp_code) %>%
   summarise(total_count = sum(count))
 
+# Invert data
+inverts <- read_csv(here("data", "inverts_abund.csv"))
+
+inverts_clean <- inverts %>%
+  clean_names() %>%
+  select(year, site, sp_code, count, scientific_name, common_name, 13:20) %>%
+  mutate(across(c(1:13), na_if, -99999))
+
+inverts_sub <- inverts_clean %>%
+  group_by(year, site, common_name) %>%
+  summarise(total_count = sum(count))
+
 # Set up a custom theme 
 
 my_theme <- bs_theme(
@@ -175,8 +187,6 @@ ui <- fluidPage(
                                       ) # end main panel 2
                                       ) #end sidebar layout 2
                       ), # end tabpanel 3
-            
-
             
             tabPanel("Kelp Forest Community", # Start panel 4
 
