@@ -52,8 +52,8 @@ kelp_factors_sub <- kelp_factors %>%
   filter(site_id %in% c(267:298)) %>% 
   group_by(site_id, year)
 
-# Fish data 
-
+# Biodiversity Data
+## Fish:
 fish <- read_csv(here("data", "fish_abund.csv"))
 
 fish_clean <- fish %>%
@@ -76,7 +76,7 @@ fish_sub <- fish_clean %>%
                           site == 'BULL' ~ 'Bulito',
                           site == 'GOLB' ~ 'Goleta Bay'))
 
-# Invert data
+## Invert:
 inverts <- read_csv(here("data", "inverts_abund.csv"))
 
 inverts_clean <- inverts %>%
@@ -86,7 +86,22 @@ inverts_clean <- inverts %>%
 
 inverts_sub <- inverts_clean %>%
   group_by(year, site, common_name) %>%
-  summarise(total_count = sum(count)) 
+  summarise(total_count = sum(count)) %>%
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay'))
+
+## Join both fish and inverts together into one:
+biodiversity <- fish_sub %>% full_join(inverts_sub)
+# end Biodiversity data
 
 # Set up a custom theme 
 
@@ -204,21 +219,21 @@ ui <- fluidPage(
                        sidebarPanel(
                          selectInput(inputId = "pick_species",
                                             label = "Choose Species: \n (to remove species selection, click and press 'delete')",
-                                            choices = unique(fish_sub$common_name),
-                                     selected = "Blacksmith",
+                                            choices = unique(biodiversity$common_name),
+                                     selected = "Aggregating anemone",
                                      multiple = TRUE
                          ) # end selectInput
                          ), # end sidebarPanel
 
                        mainPanel(
-                         sliderInput("fish_year_selector", "Select Year",
-                                     min = min(fish_sub$year),
-                                     max = max(fish_sub$year),
+                         sliderInput("biodiversity_year_selector", "Select Year",
+                                     min = min(biodiversity$year),
+                                     max = max(biodiversity$year),
                                      value = 2021,
                                      step = 1,
                                      sep = ""), # end slider input
                          
-                         plotOutput('fishplot')
+                         plotOutput('biodiversityplot')
                        ) # end main panel 
                      ) # end sidebarLayout
                      ) # end tab panel 4
@@ -264,10 +279,10 @@ coeff <- 10^7
   # Function for Kelp Biodiversity  
   
   ## Fish Plot: 
-  fish_reactive <- reactive({
-    fish_sub %>% 
+  bio_reactive <- reactive({
+    biodiversity %>% 
       filter(common_name %in% input$pick_species) %>%
-      filter(year == input$fish_year_selector)
+      filter(year == input$biodiversity_year_selector)
   }) # end plot
 
   
@@ -322,10 +337,10 @@ output$whichplot <- renderPlot({
   plot # call the option 
   }) # end this function for selecting factor graphs 
 
-#Fish plot 
+#Biodiversity plot 
   
-output$fishplot <- renderPlot({
-  plot = ggplot(data = fish_reactive())+
+output$biodiversityplot <- renderPlot({
+  plot = ggplot(data = bio_reactive())+
     geom_col(aes(x = site, y = total_count, fill = common_name)) +
     theme(axis.text.x = element_text(angle = 90)) +
     theme_minimal() +
