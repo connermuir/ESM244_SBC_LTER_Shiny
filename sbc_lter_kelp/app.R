@@ -203,9 +203,10 @@ ui <- fluidPage(
                      sidebarLayout(# Adding sidebar selector for factors
                        sidebarPanel(
                          selectInput(inputId = "pick_species",
-                                            label = "Choose Species:",
+                                            label = "Choose Species: \n (to remove species selection, click and press 'delete')",
                                             choices = unique(fish_sub$common_name),
-                                            selected = NULL
+                                     selected = "Blacksmith",
+                                     multiple = TRUE
                          ) # end selectInput
                          ), # end sidebarPanel
 
@@ -213,7 +214,7 @@ ui <- fluidPage(
                          sliderInput("fish_year_selector", "Select Year",
                                      min = min(fish_sub$year),
                                      max = max(fish_sub$year),
-                                     value = 2000,
+                                     value = 2021,
                                      step = 1,
                                      sep = ""), # end slider input
                          
@@ -260,17 +261,15 @@ coeff <- 10^7
   })
   # output for date slider
   
-  # Function for Biodiversity 
+  # Function for Kelp Biodiversity  
   
+  ## Fish Plot: 
   fish_reactive <- reactive({
     fish_sub %>% 
-      filter(common_name %in% input$pick_species)
-  }) 
-  
-  slider_reactive <- reactive({
-    fish_sub %>%
-      filter(year %in% input$fish_year_selector)
-  })
+      filter(common_name %in% input$pick_species) %>%
+      filter(year == input$fish_year_selector)
+  }) # end plot
+
   
   # Output for tmap kelp plot 
   
@@ -326,10 +325,12 @@ output$whichplot <- renderPlot({
 #Fish plot 
   
 output$fishplot <- renderPlot({
-  plot = ggplot(data = fish_reactive(), aes(x = site, y = total_count)) +
-    geom_jitter(aes(color = common_name)) +
+  plot = ggplot(data = fish_reactive())+
+    geom_col(aes(x = site, y = total_count, fill = common_name)) +
+    theme(axis.text.x = element_text(angle = 90)) +
     theme_minimal() +
     labs(x = "Site", y = "\nCount\n")
+  plot
   })
 
   
