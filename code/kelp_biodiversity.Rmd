@@ -33,12 +33,14 @@ inverts_clean <- inverts %>%
 
 ```{r, fish graph}
 fish_sub <- fish_clean %>%
-  group_by(year, site, sp_code) %>%
+  group_by(year, site, common_name) %>%
   summarise(total_count = sum(count))
 
 species_plot <- ggplot(data = fish_sub, 
                        aes(x = year, y = total_count)) +
-  geom_col(fill = "darkseagreen") +
+  geom_line(aes(color = common_name)) +
+  geom_area(fill = "red",
+            alpha = 0.4) +
   theme_minimal() +
   labs(title = "\nSpecies Count Over Time\n", 
        x = "Year", y = "\nCount\n")
