@@ -13,32 +13,16 @@ library(plotly)
 
 # Map data first:
 
-nc_kelp_raw <- nc_open(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
+santa_cruz_kelp <- read_csv(here("data", "santa_cruz_kelp_2021.csv"))
 
-year <-ncvar_get(nc_kelp_raw,"year")
-quarter <- ncvar_get(nc_kelp_raw,"quarter")
-
-lon <- ncvar_get(nc_kelp_raw,"longitude")
-lat <- ncvar_get(nc_kelp_raw,"latitude")
-biomass<-ncvar_get(nc_kelp_raw,"biomass") 
-
-time<-data.frame(year,quarter)
-
-# Now we have the time data in its own data frame thanks to Li, 152 is the time stamp for Q4 of 2021
-
-df_li <- data.frame(lat,lon,biomass=data.frame(biomass)[,152]) %>%
-  filter(!is.na(biomass)) %>%
-  filter(lat>=33.847062&lat<=34.100458&lon>=-120.291726&lon<=-119.924374) %>%
-  filter(biomass > 0) # too many values if 0s are included 
-
-# Providing a coordinate range for SB region (this may actually jsut be the islands), still has some NAs, can't drop_na or all observations disappear 
+#This is a subset I made of only Santa Cruz island for 2021 
 
 # try to make a sf and fixed map from this 
 
-kelp_sat_sf <- df_li %>% 
+santa_cruz_kelp_sf <- santa_cruz_kelp %>% 
   st_as_sf(coords = c('lon', 'lat'))
 
-st_crs(kelp_sat_sf) <- 4326
+st_crs(santa_cruz_kelp_sf) <- 4326
 
 #End subset map data
 
@@ -67,6 +51,19 @@ kelp_abund_sub <- kelp_abund %>%
 kelp_factors_sub <- kelp_factors %>% 
   filter(site_id %in% c(267:298)) %>% 
   group_by(site_id, year)
+
+# Fish data 
+
+fish <- read_csv(here("data", "fish_abund.csv"))
+
+fish_clean <- fish %>%
+  clean_names() %>%
+  select(year, site, sp_code, count, scientific_name, common_name, 13:21) %>%
+  mutate(across(c(1:13), na_if, -99999))
+
+fish_sub <- fish_clean %>%
+  group_by(year, site, sp_code) %>%
+  summarise(total_count = sum(count))
 
 # Set up a custom theme 
 
@@ -138,7 +135,7 @@ ui <- fluidPage(
                               strong("Invertebrate Abundance at LTER Sties:"),
                               em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Invertebrate and algal density ver 28. Environmental Data Initiative."),
                               tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.19", 
-                                     "Link"),
+                                     "Link")
                               ),
                        column(2,
                             img(src = 'garbaldi.jpg', 
@@ -167,7 +164,7 @@ ui <- fluidPage(
                                                       "Nitrate Concentration",
                                                       "Wave Height"),
                                                     selected = "Abundance by Site"), #trying multiple options, end select
-                                                plotOutput('whichplot'),
+                                        plotOutput('whichplot'),
                                         sliderInput("year_selector", "Select Year Range",
                                                     min = min(kelp_factors_sub$year),
                                                     max = max(kelp_factors_sub$year),
@@ -181,18 +178,26 @@ ui <- fluidPage(
             
           
             tabPanel("Kelp Forest Community",
-                     sidebarLayout( # Adding sidevar selector for factors
+                     sidebarLayout( # Adding sidebar selector for factors
                        sidebarPanel(
                          checkboxGroupInput(inputId = "pick_species",
                                             label = "Choose Species",
-                                            choices = unique(fish_sub$sp                       ))) # end main panel 4
+                                            choices = unique(fish_sub$sp_code),
+                                            selected = "AHOL"
+                                            ) #end checkbox input
+                         ), # end side panel 4
+                       
+                       mainPanel(
+                         plotOutput('fish_plot')
+                       ) # End main panel 4
+                     ) # end side panel 4
                      ) # end tab panel 4
-                     ) # end navbarPage
-                     ) # end ui
+                     ) #end navbarPage
+                    )# end ui
 
 # Create server object 
 
-server <- function(input, output) { # 
+server <- function(input, output) { 
   
 # Need data frames here !!! 
   
@@ -205,8 +210,6 @@ combined_kelp_sb <- combined_kelp %>%
   filter(site_id %in% c(267:298)) %>% 
   group_by(site_id)
 
-kelp_sb_sf <- combined_kelp_sb %>% 
-  st_as_sf(coords = c('lon', 'lat'))
 
 # End Panel 1 Data 
 
@@ -228,10 +231,17 @@ coeff <- 10^7
   })
   # output for date slider
   
+  #Output for reactive fish plot
+  
+  fish_reactive <- reactive({
+    fish_sub %>% 
+      filter(sp_code %in% input$pick_species)
+  })
+  
   # Output for tmap kelp plot 
   
   output$tmap_kelp_sc <- renderTmap({
-      tm_shape(kelp_sat_sf) +
+      tm_shape(santa_cruz_kelp_sf) +
       tm_legend(title = "Santa Cruz Kelp Biomass in 2021 (kg)") +
       tm_dots('biomass', palette = 'BuGn')
   })
@@ -278,6 +288,17 @@ output$whichplot <- renderPlot({
   }
   plot # call the option 
   }) # end this function for selecting factor graphs 
+
+#Fish plot 
+
+output$fish_plot <- renderPlot(
+  ggplot(data = fish_reactive(), 
+         aes(x = year, y = total_count)) +
+    geom_col(fill = "darkseagreen") +
+    theme_minimal() +
+    labs(title = "\nSpecies Count Over Time\n", 
+         x = "Year", y = "\nCount\n")
+  ) #end fish plot 
   
 } # end all sever 
 
