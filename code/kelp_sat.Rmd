@@ -45,7 +45,13 @@ df_li <- data.frame(lat,lon,biomass=data.frame(biomass)[,152]) %>%
   filter(lat>=33.847062&lat<=34.100458&lon>=-120.291726&lon<=-119.924374) %>%
   filter(biomass > 0) # too many values if 0s are included 
 
-# Providing a coordinate range for SB region (this may actually jsut be the islands), still has some NAs, can't drop_na or all observations disappear 
+print(df_li)
+
+write.csv(df_li, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_cruz_kelp_2021.csv', row.names = FALSE)
+
+# Providing a coordinate range for SB region (this may actually just be the islands), still has some NAs, can't drop_na or all observations disappear 
+
+#create a csv for this 
 
 # try to make a sf and fixed map from this 
 
