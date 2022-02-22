@@ -365,7 +365,7 @@ output$biodiversityplot <- renderPlot({
   plot = ggplot(data = bio_reactive())+
     geom_col(aes(x = site, y = total_count, fill = common_name), position = "dodge") +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90)) +
+    theme(axis.text.x = element_text(angle = 45)) +
     labs(x = "Site", y = "\nCount\n")
   plot
   })
