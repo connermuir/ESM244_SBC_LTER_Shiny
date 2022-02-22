@@ -363,9 +363,9 @@ output$whichplot <- renderPlot({
 ## Species/Location Plot
 output$biodiversityplot <- renderPlot({
   plot = ggplot(data = bio_reactive())+
-    geom_col(aes(x = site, y = total_count, fill = common_name)) +
-    theme(axis.text.x = element_text(angle = 90)) +
+    geom_col(aes(x = site, y = total_count, fill = common_name), position = "dodge") +
     theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90)) +
     labs(x = "Site", y = "\nCount\n")
   plot
   })
@@ -373,7 +373,7 @@ output$biodiversityplot <- renderPlot({
 ## Timeseries plot
 output$timeseries <- renderPlot({
   plot = ggplot(data = time_reactive()) +
-    geom_line(aes(x = year, y = total_count, fill = 'green', alpha = 0.5))
+    geom_line(aes(x = year, y = total_count, color = common_name))
   plot
 })
 } # end all sever 
