@@ -74,9 +74,40 @@ inverts_sub <- inverts_clean %>%
                           site == 'SCDI' ~ 'Santa Cruz - Diablo',
                           site == 'BULL' ~ 'Bulito',
                           site == 'GOLB' ~ 'Goleta Bay'))
+```
 
+```{r}
+# combine both fish and inverts into one dataframe 
 biodiversity <- fish_sub %>% full_join(inverts_sub)
 ```
+
+```{r}
+# random experimental code
+
+fish_series <- fish %>%
+  clean_names() %>%
+  select(year, site, count, scientific_name, common_name) %>%
+  mutate(across(c(1:5), na_if, -99999)) %>%
+  group_by(year, site, common_name) %>%
+  summarise(total_count = sum(count))
+
+ggplot(data = fish_series) +
+  geom_line(aes(x = date, y = total_count)) +
+  facet_wrap("common_name")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

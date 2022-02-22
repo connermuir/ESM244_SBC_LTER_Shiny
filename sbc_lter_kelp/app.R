@@ -217,12 +217,24 @@ ui <- fluidPage(
             tabPanel("Kelp Forest Community", # Start panel 4
                      sidebarLayout(# Adding sidebar selector for factors
                        sidebarPanel(
-                         selectInput(inputId = "pick_species",
+                         
+                           selectInput(inputId = "pick_species",
                                             label = "Choose Species: \n (to remove species selection, click and press 'delete')",
                                             choices = unique(biodiversity$common_name),
                                      selected = "Aggregating anemone",
-                                     multiple = TRUE
-                         ) # end selectInput
+                                     multiple = TRUE), # end selectInput
+                           
+                         # input selector panels for second graph
+                           selectInput(inputId = "pick_species_2",
+                                     label = "Choose Species:",
+                                     choices = unique(biodiversity$common_name),
+                                     selected = "Aggregating anemone",
+                                     multiple = TRUE), # end selectInput
+                         selectInput(inputId = "pick_location",
+                                     label = "Choose Site:",
+                                     choices = unique(biodiversity$site),
+                                     selected = "Naples",
+                                     multiple = FALSE)
                          ), # end sidebarPanel
 
                        mainPanel(
@@ -233,8 +245,10 @@ ui <- fluidPage(
                                      step = 1,
                                      sep = ""), # end slider input
                          
-                         plotOutput('biodiversityplot')
-                       ) # end main panel 
+                         plotOutput('biodiversityplot'),
+                      
+                         plotOutput('timeseries')
+                       ) # end mainPanel
                      ) # end sidebarLayout
                      ) # end tab panel 4
                      ) #end navbarPage
@@ -276,13 +290,20 @@ coeff <- 10^7
   })
   # output for date slider
   
-  # Function for Kelp Biodiversity  
+  # Functions for Kelp Biodiversity  
   
-  ## Fish Plot: 
+  ## Biodiversity Plot: 
   bio_reactive <- reactive({
     biodiversity %>% 
       filter(common_name %in% input$pick_species) %>%
       filter(year == input$biodiversity_year_selector)
+  }) # end plot
+  
+  ## Timeseries Plot:
+  time_reactive <- reactive({
+    biodiversity %>%
+      filter(common_name %in% input$pick_species_2) %>%
+      filter(site == input$pick_location)
   }) # end plot
 
   
@@ -337,8 +358,9 @@ output$whichplot <- renderPlot({
   plot # call the option 
   }) # end this function for selecting factor graphs 
 
-#Biodiversity plot 
-  
+#Biodiversity plot
+
+## Species/Location Plot
 output$biodiversityplot <- renderPlot({
   plot = ggplot(data = bio_reactive())+
     geom_col(aes(x = site, y = total_count, fill = common_name)) +
@@ -348,7 +370,12 @@ output$biodiversityplot <- renderPlot({
   plot
   })
 
-  
+## Timeseries plot
+output$timeseries <- renderPlot({
+  plot = ggplot(data = time_reactive()) +
+    geom_line(aes(x = year, y = total_count, fill = 'green', alpha = 0.5))
+  plot
+})
 } # end all sever 
 
 thematic_shiny()
