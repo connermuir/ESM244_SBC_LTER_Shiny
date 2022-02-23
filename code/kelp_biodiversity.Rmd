@@ -55,7 +55,6 @@ fish_plot <- ggplot(data = fish_sub,
   labs(title = "\nSpecies Count Over Time\n", 
        x = "Site", y = "\nCount\n")
 
-ggplotly(species_plot)
  
 ```
 
@@ -84,16 +83,13 @@ biodiversity <- fish_sub %>% full_join(inverts_sub)
 ```{r}
 # random experimental code
 
-fish_series <- fish %>%
-  clean_names() %>%
-  select(year, site, count, scientific_name, common_name) %>%
-  mutate(across(c(1:5), na_if, -99999)) %>%
-  group_by(year, site, common_name) %>%
-  summarise(total_count = sum(count))
+total_bio_subset <- biodiversity %>%
+  group_by(common_name, year) %>%
+  summarise(total_count = sum(total_count))
 
-ggplot(data = fish_series) +
-  geom_line(aes(x = date, y = total_count)) +
-  facet_wrap("common_name")
+total_bio_subset$site <- "All Sites"
+
+biodiversity_select_all <- biodiversity %>% full_join(total_bio_subset)
 ```
 
 

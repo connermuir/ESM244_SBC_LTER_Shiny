@@ -101,6 +101,14 @@ inverts_sub <- inverts_clean %>%
 
 ## Join both fish and inverts together into one:
 biodiversity <- fish_sub %>% full_join(inverts_sub)
+
+total_bio_subset <- biodiversity %>%
+  group_by(common_name, year) %>%
+  summarise(total_count = sum(total_count))
+
+total_bio_subset$site <- "All Sites"
+
+biodiversity_select_all <- biodiversity %>% full_join(total_bio_subset)
 # end Biodiversity data
 
 # Set up a custom theme 
@@ -225,17 +233,13 @@ ui <- fluidPage(
                                      multiple = TRUE), # end selectInput
                            
                          # input selector panels for second graph
-                           selectInput(inputId = "pick_species_2",
-                                     label = "Choose Species:",
-                                     choices = unique(biodiversity$common_name),
-                                     selected = "Aggregating anemone",
-                                     multiple = TRUE), # end selectInput
                          selectInput(inputId = "pick_location",
                                      label = "Choose Site:",
                                      choices = unique(biodiversity$site),
                                      selected = "Naples",
-                                     multiple = FALSE)
-                         ), # end sidebarPanel
+                                     multiple = FALSE
+                         ) # end selectInput
+                         ),# end sidebarPanel
 
                        mainPanel(
                          sliderInput("biodiversity_year_selector", "Select Year",
@@ -247,7 +251,9 @@ ui <- fluidPage(
                          
                          plotOutput('biodiversityplot'),
                       
-                         plotOutput('timeseries')
+                         plotOutput('timeseries'),
+                         
+                         plotOutput('statictotals')
                        ) # end mainPanel
                      ) # end sidebarLayout
                      ) # end tab panel 4
@@ -302,7 +308,7 @@ coeff <- 10^7
   ## Timeseries Plot:
   time_reactive <- reactive({
     biodiversity %>%
-      filter(common_name %in% input$pick_species_2) %>%
+      filter(common_name %in% input$pick_species) %>%
       filter(site == input$pick_location)
   }) # end plot
 
@@ -366,14 +372,25 @@ output$biodiversityplot <- renderPlot({
     geom_col(aes(x = site, y = total_count, fill = common_name), position = "dodge") +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45)) +
-    labs(x = "Site", y = "\nCount\n")
+    labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n")
   plot
   })
 
 ## Timeseries plot
 output$timeseries <- renderPlot({
   plot = ggplot(data = time_reactive()) +
-    geom_line(aes(x = year, y = total_count, color = common_name))
+    geom_line(aes(x = year, y = total_count, color = common_name))+
+    labs(title = "Site-Specific Time Series", x = "Year", y = "Count")
+  plot
+})
+
+## Static Totals
+output$statictotals <- renderPlot({
+  plot = ggplot(data = total_bio_subset) +
+    geom_line(aes(x = year, y = total_count, color = common_name)) +
+    labs(title = "Aggretgate Counts Over All Sites",
+         x = "Year",
+         y = "Count")
   plot
 })
 } # end all sever 
