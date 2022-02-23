@@ -384,10 +384,10 @@ output$whichplot <- renderPlot({
 
 ## Species/Location Plot
 output$biodiversityplot <- renderPlot({
-  plot = ggplot(data = bio_reactive())+
+  plot = ggplot(data = bio_reactive()) +
     geom_col(aes(x = site, y = total_count, fill = common_name), position = "dodge") +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45)) +
+    theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1)) +
     labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n")
   plot
   })
@@ -395,8 +395,10 @@ output$biodiversityplot <- renderPlot({
 ## Timeseries plot
 output$timeseries <- renderPlot({
   plot = ggplot(data = time_reactive()) +
-    geom_line(aes(x = year, y = total_count, color = common_name))+
-    labs(title = "Site-Specific Time Series", x = "Year", y = "Count")
+    geom_line(aes(x = year, y = total_count, color = common_name)) +
+    theme_minimal() +
+    labs(title = "Site-Specific Time Series", x = "Year", y = "Count") +
+    scale_fill_manual("Species")
   plot
 })
 
@@ -404,6 +406,7 @@ output$timeseries <- renderPlot({
 output$statictotals <- renderPlot({
   plot = ggplot(data = total_reactive()) +
     geom_line(aes(x = year, y = total_count, color = common_name)) +
+    theme_minimal() +
     labs(title = "Aggretgate Counts Over All Sites",
          x = "Year",
          y = "Count")
