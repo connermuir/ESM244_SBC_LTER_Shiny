@@ -108,7 +108,6 @@ total_bio_subset <- biodiversity %>%
 
 total_bio_subset$site <- "All Sites"
 
-biodiversity_select_all <- biodiversity %>% full_join(total_bio_subset)
 # end Biodiversity data
 
 # Set up a custom theme 
@@ -238,11 +237,12 @@ ui <- fluidPage(
                                      choices = unique(biodiversity$site),
                                      selected = "Naples",
                                      multiple = FALSE
-                         ) # end selectInput
+                         ), # end selectInput
                          ),# end sidebarPanel
 
                        mainPanel(
-                         sliderInput("biodiversity_year_selector", "Select Year",
+                        
+                         sliderInput("biodiversity_year_selector", "Select Year:",
                                      min = min(biodiversity$year),
                                      max = max(biodiversity$year),
                                      value = 2021,
@@ -253,7 +253,14 @@ ui <- fluidPage(
                       
                          plotOutput('timeseries'),
                          
+                         selectInput(inputId = "species",
+                                     label = "Choose Species:",
+                                     choices = unique(total_bio_subset$common_name),
+                                     selected = "Aggregating anemone",
+                                     multiple = TRUE), # end selectInput
+                                     
                          plotOutput('statictotals')
+                      
                        ) # end mainPanel
                      ) # end sidebarLayout
                      ) # end tab panel 4
@@ -312,6 +319,11 @@ coeff <- 10^7
       filter(site == input$pick_location)
   }) # end plot
 
+  ## Static Plot:
+  total_reactive <- reactive({
+    total_bio_subset %>%
+      filter(common_name %in% input$species)
+  }) # end plot
   
   # Output for tmap kelp plot 
   
@@ -386,7 +398,7 @@ output$timeseries <- renderPlot({
 
 ## Static Totals
 output$statictotals <- renderPlot({
-  plot = ggplot(data = total_bio_subset) +
+  plot = ggplot(data = total_reactive()) +
     geom_line(aes(x = year, y = total_count, color = common_name)) +
     labs(title = "Aggretgate Counts Over All Sites",
          x = "Year",
