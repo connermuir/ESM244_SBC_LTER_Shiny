@@ -241,6 +241,8 @@ ui <- fluidPage(
                          ),# end sidebarPanel
 
                        mainPanel(
+                         
+                         h3("Explore species counts by year and site:"),
                         
                          sliderInput("biodiversity_year_selector", "Select Year:",
                                      min = min(biodiversity$year),
@@ -252,6 +254,8 @@ ui <- fluidPage(
                          plotOutput('biodiversityplot'),
                       
                          plotOutput('timeseries'),
+                         
+                         h3("Explore total species counts over all sites:"),
                          
                          selectInput(inputId = "species",
                                      label = "Choose Species:",
