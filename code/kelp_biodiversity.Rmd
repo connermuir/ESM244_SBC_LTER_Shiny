@@ -33,19 +33,78 @@ inverts_clean <- inverts %>%
 
 ```{r, fish graph}
 fish_sub <- fish_clean %>%
-  group_by(year, site, sp_code) %>%
-  summarise(total_count = sum(count))
+  group_by(year, site, common_name) %>%
+  summarise(total_count = sum(count)) %>%
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay'))
 
-species_plot <- ggplot(data = fish_sub, 
-                       aes(x = year, y = total_count)) +
-  geom_col(fill = "darkseagreen") +
+fish_plot <- ggplot(data = fish_sub, 
+                       aes(x = site, y = total_count)) + 
+  geom_col(aes(color = common_name)) +
+  theme(axis.text.x = element_text(angle = 45)) +
   theme_minimal() +
   labs(title = "\nSpecies Count Over Time\n", 
-       x = "Year", y = "\nCount\n")
+       x = "Site", y = "\nCount\n")
 
-ggplotly(species_plot)
  
 ```
+
+```{r, invert graph}
+inverts_sub <- inverts_clean %>%
+  group_by(year, site, common_name) %>%
+  summarise(total_count = sum(count)) %>%
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay'))
+```
+
+```{r}
+# combine both fish and inverts into one dataframe 
+biodiversity <- fish_sub %>% full_join(inverts_sub)
+```
+
+```{r}
+# random experimental code
+
+total_bio_subset <- biodiversity %>%
+  group_by(common_name, year) %>%
+  summarise(total_count = sum(total_count))
+
+total_bio_subset$site <- "All Sites"
+
+biodiversity_select_all <- biodiversity %>% full_join(total_bio_subset)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

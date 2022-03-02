@@ -52,8 +52,8 @@ kelp_factors_sub <- kelp_factors %>%
   filter(site_id %in% c(267:298)) %>% 
   group_by(site_id, year)
 
-# Fish data 
-
+# Biodiversity Data
+## Fish:
 fish <- read_csv(here("data", "fish_abund.csv"))
 
 fish_clean <- fish %>%
@@ -62,8 +62,53 @@ fish_clean <- fish %>%
   mutate(across(c(1:13), na_if, -99999))
 
 fish_sub <- fish_clean %>%
-  group_by(year, site, sp_code) %>%
-  summarise(total_count = sum(count))
+  group_by(year, site, common_name) %>%
+  summarise(total_count = sum(count)) %>%
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay'))
+
+## Invert:
+inverts <- read_csv(here("data", "inverts_abund.csv"))
+
+inverts_clean <- inverts %>%
+  clean_names() %>%
+  select(year, site, sp_code, count, scientific_name, common_name, 13:20) %>%
+  mutate(across(c(1:13), na_if, -99999))
+
+inverts_sub <- inverts_clean %>%
+  group_by(year, site, common_name) %>%
+  summarise(total_count = sum(count)) %>%
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay'))
+
+## Join both fish and inverts together into one:
+biodiversity <- fish_sub %>% full_join(inverts_sub)
+
+total_bio_subset <- biodiversity %>%
+  group_by(common_name, year) %>%
+  summarise(total_count = sum(total_count))
+
+total_bio_subset$site <- "All Sites"
+
+# end Biodiversity data
 
 # Set up a custom theme 
 
@@ -176,21 +221,52 @@ ui <- fluidPage(
                                       ) #end sidebar layout 2
                       ), # end tabpanel 3
             
-          
-            tabPanel("Kelp Forest Community",
-                     sidebarLayout( # Adding sidebar selector for factors
+            tabPanel("Kelp Forest Community", # Start panel 4
+                     sidebarLayout(# Adding sidebar selector for factors
                        sidebarPanel(
-                         checkboxGroupInput(inputId = "pick_species",
-                                            label = "Choose Species",
-                                            choices = unique(fish_sub$sp_code),
-                                            selected = "AHOL"
-                                            ) #end checkbox input
-                         ), # end side panel 4
-                       
+                         
+                           selectInput(inputId = "pick_species",
+                                            label = "Choose Species: \n (to remove species selection, click and press 'delete')",
+                                            choices = unique(biodiversity$common_name),
+                                     selected = "Aggregating anemone",
+                                     multiple = TRUE), # end selectInput
+                           
+                         # input selector panels for second graph
+                         selectInput(inputId = "pick_location",
+                                     label = "Choose Site:",
+                                     choices = unique(biodiversity$site),
+                                     selected = "Naples",
+                                     multiple = FALSE
+                         ), # end selectInput
+                         ),# end sidebarPanel
+
                        mainPanel(
-                         plotOutput('fish_plot')
-                       ) # End main panel 4
-                     ) # end side panel 4
+                         
+                         h3("Explore species counts by year and site:"),
+                        
+                         sliderInput("biodiversity_year_selector", "Select Year:",
+                                     min = min(biodiversity$year),
+                                     max = max(biodiversity$year),
+                                     value = 2021,
+                                     step = 1,
+                                     sep = ""), # end slider input
+                         
+                         plotOutput('biodiversityplot'),
+                      
+                         plotOutput('timeseries'),
+                         
+                         h3("Explore total species counts over all sites:"),
+                         
+                         selectInput(inputId = "species",
+                                     label = "Choose Species:",
+                                     choices = unique(total_bio_subset$common_name),
+                                     selected = "Aggregating anemone",
+                                     multiple = TRUE), # end selectInput
+                                     
+                         plotOutput('statictotals')
+                      
+                       ) # end mainPanel
+                     ) # end sidebarLayout
                      ) # end tab panel 4
                      ) #end navbarPage
                     )# end ui
@@ -231,12 +307,27 @@ coeff <- 10^7
   })
   # output for date slider
   
-  #Output for reactive fish plot
+  # Functions for Kelp Biodiversity  
   
-  fish_reactive <- reactive({
-    fish_sub %>% 
-      filter(sp_code %in% input$pick_species)
-  })
+  ## Biodiversity Plot: 
+  bio_reactive <- reactive({
+    biodiversity %>% 
+      filter(common_name %in% input$pick_species) %>%
+      filter(year == input$biodiversity_year_selector)
+  }) # end plot
+  
+  ## Timeseries Plot:
+  time_reactive <- reactive({
+    biodiversity %>%
+      filter(common_name %in% input$pick_species) %>%
+      filter(site == input$pick_location)
+  }) # end plot
+
+  ## Static Plot:
+  total_reactive <- reactive({
+    total_bio_subset %>%
+      filter(common_name %in% input$species)
+  }) # end plot
   
   # Output for tmap kelp plot 
   
@@ -289,17 +380,38 @@ output$whichplot <- renderPlot({
   plot # call the option 
   }) # end this function for selecting factor graphs 
 
-#Fish plot 
+#Biodiversity plot
 
-output$fish_plot <- renderPlot(
-  ggplot(data = fish_reactive(), 
-         aes(x = year, y = total_count)) +
-    geom_col(fill = "darkseagreen") +
+## Species/Location Plot
+output$biodiversityplot <- renderPlot({
+  plot = ggplot(data = bio_reactive()) +
+    geom_col(aes(x = site, y = total_count, fill = common_name), position = "dodge") +
     theme_minimal() +
-    labs(title = "\nSpecies Count Over Time\n", 
-         x = "Year", y = "\nCount\n")
-  ) #end fish plot 
-  
+    theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1)) +
+    labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n")
+  plot
+  })
+
+## Timeseries plot
+output$timeseries <- renderPlot({
+  plot = ggplot(data = time_reactive()) +
+    geom_line(aes(x = year, y = total_count, color = common_name)) +
+    theme_minimal() +
+    labs(title = "Site-Specific Time Series", x = "Year", y = "Count") +
+    scale_fill_manual("Species")
+  plot
+})
+
+## Static Totals
+output$statictotals <- renderPlot({
+  plot = ggplot(data = total_reactive()) +
+    geom_line(aes(x = year, y = total_count, color = common_name)) +
+    theme_minimal() +
+    labs(title = "Aggretgate Counts Over All Sites",
+         x = "Year",
+         y = "Count")
+  plot
+})
 } # end all sever 
 
 thematic_shiny()
