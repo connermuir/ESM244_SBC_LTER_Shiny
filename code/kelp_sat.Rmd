@@ -15,7 +15,7 @@ library(raster)
 library(rgdal)
 library(here)
 library(tmap)
-library(stars)
+library(stringr)
 ```
 
 ```{r}
@@ -27,6 +27,8 @@ library(stars)
 
 nc_kelp_raw <- nc_open(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
 
+nc_kelp_rast <- raster(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
+
 year <-ncvar_get(nc_kelp_raw,"year")
 quarter <- ncvar_get(nc_kelp_raw,"quarter")
   
@@ -35,9 +37,10 @@ lat <- ncvar_get(nc_kelp_raw,"latitude")
 biomass<-ncvar_get(nc_kelp_raw,"biomass") 
 
 
-time<-data.frame(year,quarter)
+time<-data.frame(year,quarter) %>% 
+   mutate(time_stamp = group_indices(., year, quarter))
 
-# Now we have the time data in its own data frame thanks to Li, 152 is the time stamp for Q4 of 2021
+# Now we have the time data in its own data frame thanks. 152 is the time stamp for Q4 of 2021. Each time_stamp has its own unique ID. 
 
 
 df_li <- data.frame(lat,lon,biomass=data.frame(biomass)[,152]) %>%
@@ -69,8 +72,39 @@ tmap_kelp_sat <-
 tmap_kelp_sat
 
 #This works! Kelp values for one quarter/year on santa rosa 
+#geom tile can work with irregular grid 
 
+# input$year <- read_csv (here( .... , 2008 csv. ))
 
+sc_biomass <- data.frame(lat,lon, biomass=data.frame(biomass)) %>%
+  filter(lat>=33.847062&lat<=34.100458&lon>=-120.291726&lon<=-119.924374) %>%
+  mutate(cell_id = group_indices(., lat, lon)) %>% 
+  pivot_longer(., 3:154, names_to = 'time_stamp', values_to = 'biomass') %>% 
+  mutate_at("time_stamp", str_replace, "biomass.X", "") %>%
+  drop_na() %>% 
+  filter(biomass>0) %>% 
+  transform(., time_stamp = as.numeric(time_stamp))
+
+# Now we are getting somewhere. We have a tidy data set with time stamps and site IDs, left the coords in for now. Need to ask Nathan how to reference the time stamps across the data 
+  
+#the following is if we just want the site coordinates ("cell_id")
+sc_sites <- data.frame(lat,lon, biomass=data.frame(biomass)) %>%
+  filter(lat>=33.847062&lat<=34.100458&lon>=-120.291726&lon<=-119.924374) %>% 
+  dplyr::select(lat,lon) %>% 
+  mutate(cell_id = group_indices(., lat, lon))
+
+# Here we have cell ids for all sites in the santa cruz area 
+  
+sc_biomass_complete <- 
+  inner_join(sc_biomass, time, by = "time_stamp") %>% 
+  group_by(lat, lon, cell_id, year) %>% 
+  summarize(biomass = round(mean(biomass), 0))
+
+write.csv(sc_biomass_complete, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_cruz_kelp_all_years.csv', row.names = FALSE)
+
+# This now shows all non zero/NA values for every year at every site. The time stamps have been assigned actual years and we have averged the biomass for the year to remove the quarterly level observations 
+
+# Now we have assigned site_id to eah coordinate block for SC island 
 ```
 
 
@@ -95,7 +129,7 @@ combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")
 
 combined_kelp_sb <- combined_kelp %>% 
   filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id)
+  group_by(site_id) %>% 
 
 kelp_sb_sf <- combined_kelp_sb %>% 
   st_as_sf(coords = c('lon', 'lat'))
