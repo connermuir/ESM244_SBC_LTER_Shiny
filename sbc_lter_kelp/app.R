@@ -350,12 +350,6 @@ coeff <- 10^7
   
   # Output for tmap kelp plot 
   
-  #output$tmap_kelp_sc <- renderTmap({
-     # tm_shape(santa_cruz_kelp_sf) +
-     # tm_legend(title = "Santa Cruz Kelp Biomass in 2021 (kg)") +
-     # tm_dots('biomass', palette = 'BuGn')
- # })
-  
   output$whichmap <- renderTmap({
     if(input$mapyear == "2010"){
       map = tm_shape(santa_cruz_kelp_2010_sf) +
