@@ -27,7 +27,6 @@ library(stringr)
 
 nc_kelp_raw <- nc_open(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
 
-nc_kelp_rast <- raster(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
 
 year <-ncvar_get(nc_kelp_raw,"year")
 quarter <- ncvar_get(nc_kelp_raw,"quarter")
@@ -103,6 +102,20 @@ sc_biomass_complete <-
 write.csv(sc_biomass_complete, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_cruz_kelp_all_years.csv', row.names = FALSE)
 
 # This now shows all non zero/NA values for every year at every site. The time stamps have been assigned actual years and we have averged the biomass for the year to remove the quarterly level observations 
+
+# Because this isn't working with tmap, lets write a few example csv files to call in the shiny 
+
+sc_biomass_2010 <- sc_biomass_complete %>% 
+  filter(year == 2010)
+write.csv(sc_biomass_2010, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_cruz_kelp_2010.csv', row.names = FALSE)
+
+sc_biomass_2015 <- sc_biomass_complete %>% 
+  filter(year == 2015)
+write.csv(sc_biomass_2015, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_cruz_kelp_2015.csv', row.names = FALSE)
+
+sc_biomass_2020 <- sc_biomass_complete %>% 
+  filter(year == 2020)
+write.csv(sc_biomass_2020, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_cruz_kelp_2020.csv', row.names = FALSE)
 
 # Now we have assigned site_id to eah coordinate block for SC island 
 ```

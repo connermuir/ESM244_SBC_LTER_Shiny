@@ -11,18 +11,30 @@ library(plotly)
 ## DATA 
 #App fails unless this data set is included here 
 
-# Map data first:
+# Tmap data first:
 
-santa_cruz_kelp <- read_csv(here("data", "santa_cruz_kelp_2021.csv"))
+#These are 3 subsets for SC island 
 
-#This is a subset I made of only Santa Cruz island for 2021 
+#first 2010
+santa_cruz_kelp_2010 <- read_csv(here("data", "santa_cruz_kelp_2010.csv"))
 
-# try to make a sf and fixed map from this 
-
-santa_cruz_kelp_sf <- santa_cruz_kelp %>% 
+santa_cruz_kelp_2010_sf <- santa_cruz_kelp_2010 %>% 
   st_as_sf(coords = c('lon', 'lat'))
+st_crs(santa_cruz_kelp_2010_sf) <- 4326
 
-st_crs(santa_cruz_kelp_sf) <- 4326
+# then 2015
+santa_cruz_kelp_2015 <- read_csv(here("data", "santa_cruz_kelp_2015.csv"))
+
+santa_cruz_kelp_2015_sf <- santa_cruz_kelp_2015 %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+st_crs(santa_cruz_kelp_2015_sf) <- 4326
+
+#then 2020
+santa_cruz_kelp_2020 <- read_csv(here("data", "santa_cruz_kelp_2020.csv"))
+
+santa_cruz_kelp_2020_sf <- santa_cruz_kelp_2020 %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+st_crs(santa_cruz_kelp_2020_sf) <- 4326
 
 #End subset map data
 
@@ -190,7 +202,13 @@ ui <- fluidPage(
                        ), # End tab panel 1
             tabPanel("Kelp Canpoy", # start tab panel 2
                      mainPanel(
-                       tmapOutput("tmap_kelp_sc")
+                       selectInput("mapyear", "Select Year:",
+                                           c("2010",
+                                             "2015",
+                                             "2020"),
+                                           selected = "2020"),
+                       tmapOutput('whichmap')
+                  
                        )# end main panel 2
                      ), # end tab panel 2
             tabPanel("Abiotic Factors", #start panel 3
@@ -307,6 +325,7 @@ coeff <- 10^7
   })
   # output for date slider
   
+  
   # Functions for Kelp Biodiversity  
   
   ## Biodiversity Plot: 
@@ -331,11 +350,30 @@ coeff <- 10^7
   
   # Output for tmap kelp plot 
   
-  output$tmap_kelp_sc <- renderTmap({
-      tm_shape(santa_cruz_kelp_sf) +
-      tm_legend(title = "Santa Cruz Kelp Biomass in 2021 (kg)") +
-      tm_dots('biomass', palette = 'BuGn')
-  })
+  #output$tmap_kelp_sc <- renderTmap({
+     # tm_shape(santa_cruz_kelp_sf) +
+     # tm_legend(title = "Santa Cruz Kelp Biomass in 2021 (kg)") +
+     # tm_dots('biomass', palette = 'BuGn')
+ # })
+  
+  output$whichmap <- renderTmap({
+    if(input$mapyear == "2010"){
+      map = tm_shape(santa_cruz_kelp_2010_sf) +
+        tm_legend(title = "Santa Cruz Kelp Biomass in 2010 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')} # end 2010 option
+    
+    if(input$mapyear == "2015"){
+     map = tm_shape(santa_cruz_kelp_2015_sf) +
+        tm_legend(title = "Santa Cruz Kelp Biomass in 2015 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')} # end 2015 option 
+    
+    if(input$mapyear == "2020"){
+      map = tm_shape(santa_cruz_kelp_2020_sf) +
+        tm_legend(title = "Santa Cruz Kelp Biomass in 2020 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')
+      } # end 2020 option
+    map # call the option 
+  }) # end this function for selecting year maps 
   
   # Output for LTER Site Kelp Surveys 
   
