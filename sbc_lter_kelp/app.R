@@ -242,26 +242,36 @@ ui <- fluidPage(
             tabPanel("Kelp Forest Community", # Start panel 4
                      sidebarLayout(# Adding sidebar selector for factors
                        sidebarPanel(
-                         
+              
+                       # input selector panel for species (graph 1/2)
                            selectInput(inputId = "pick_species",
                                             label = "Choose Species: \n (to remove species selection, click and press 'delete')",
                                             choices = unique(biodiversity$common_name),
                                      selected = "Aggregating anemone",
                                      multiple = TRUE), # end selectInput
                            
-                         # input selector panels for second graph
+                         # input selector panel for location
                          selectInput(inputId = "pick_location",
                                      label = "Choose Site:",
                                      choices = unique(biodiversity$site),
                                      selected = "Naples",
                                      multiple = FALSE
                          ), # end selectInput
-                         ),# end sidebarPanel
+                        
+                        # kelp on/off switch (graph 1/2/3)
+                        
+                           checkboxInput(
+                             inputId = "kelp_viewer",
+                             label = "Kelp", 
+                             value = TRUE
+                           )
+                         ), # end sidebarPanel
 
                        mainPanel(
                          
                          h3("Explore species counts by year and site:"),
                         
+                         # year selector for first 2 graphs
                          sliderInput("biodiversity_year_selector", "Select Year:",
                                      min = min(biodiversity$year),
                                      max = max(biodiversity$year),
@@ -275,6 +285,7 @@ ui <- fluidPage(
                          
                          h3("Explore total species counts over all sites:"),
                          
+                         # input selector for third graph 
                          selectInput(inputId = "species",
                                      label = "Choose Species:",
                                      choices = unique(total_bio_subset$common_name),
@@ -287,7 +298,7 @@ ui <- fluidPage(
                      ) # end sidebarLayout
                      ) # end tab panel 4
                      ) #end navbarPage
-                    )# end ui
+                     ) # end ui
 
 # Create server object 
 
@@ -325,6 +336,10 @@ coeff <- 10^7
   })
   # output for date slider
   
+  kelp_reactive <- reactive({
+    kelp_abund_sub %>%
+      filter(fronds == input$kelp_selector)
+  })
   
   # Functions for Kelp Biodiversity  
   
@@ -418,6 +433,7 @@ output$whichplot <- renderPlot({
 output$biodiversityplot <- renderPlot({
   plot = ggplot(data = bio_reactive()) +
     geom_col(aes(x = site, y = total_count, fill = common_name), position = "dodge") +
+    geom_col(data = kelp_reactive(), aes(x = site, y = fronds, fill = fronds)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1)) +
     labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n")
