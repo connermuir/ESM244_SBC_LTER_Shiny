@@ -120,6 +120,12 @@ total_bio_subset <- biodiversity %>%
 
 total_bio_subset$site <- "All Sites"
 
+## Kelp Totals/Site for biodiversity tab
+kelp_bio <- kelp_abund_sub %>%
+  select(year, site, fronds) %>%
+  group_by(year, site) %>%
+  summarize(total_fronds = sum(fronds))
+
 # end Biodiversity data
 
 # Set up a custom theme 
@@ -264,7 +270,9 @@ ui <- fluidPage(
                              inputId = "kelp_viewer",
                              label = "Kelp", 
                              value = TRUE
-                           )
+                           ),
+                        hr(),
+                        fluidRow(column(3, verbatimTextOutput("value")))
                          ), # end sidebarPanel
 
                        mainPanel(
@@ -337,7 +345,7 @@ coeff <- 10^7
   # output for date slider
   
   kelp_reactive <- reactive({
-    kelp_abund_sub %>%
+    kelp_bio %>%
       filter(fronds == input$kelp_selector)
   })
   
