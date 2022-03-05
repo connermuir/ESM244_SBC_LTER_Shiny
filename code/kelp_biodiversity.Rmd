@@ -117,7 +117,12 @@ kelp_bio <- kelp_abund_sub %>%
   select(year, site, fronds) %>%
   group_by(year, site) %>%
   summarize(total_fronds = sum(fronds))
+
+
+total_all <- plyr::join(kelp_bio, biodiversity, by= c("site","year"), type = "full")
   
+
+
 ```
 
 
