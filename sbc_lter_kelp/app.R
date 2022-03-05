@@ -126,6 +126,8 @@ kelp_bio <- kelp_abund_sub %>%
   group_by(year, site) %>%
   summarize(total_fronds = sum(fronds))
 
+total_all <- plyr::join(kelp_bio, biodiversity, by= c("site","year"), type = "full")
+
 # end Biodiversity data
 
 # Set up a custom theme 
@@ -252,27 +254,25 @@ ui <- fluidPage(
                        # input selector panel for species (graph 1/2)
                            selectInput(inputId = "pick_species",
                                             label = "Choose Species: \n (to remove species selection, click and press 'delete')",
-                                            choices = unique(biodiversity$common_name),
+                                            choices = unique(total_all$common_name),
                                      selected = "Aggregating anemone",
                                      multiple = TRUE), # end selectInput
                            
                          # input selector panel for location
                          selectInput(inputId = "pick_location",
                                      label = "Choose Site:",
-                                     choices = unique(biodiversity$site),
+                                     choices = unique(total_all$site),
                                      selected = "Naples",
                                      multiple = FALSE
                          ), # end selectInput
                         
                         # kelp on/off switch (graph 1/2/3)
-                        
                            checkboxInput(
                              inputId = "kelp_viewer",
                              label = "Kelp", 
-                             value = TRUE
-                           ),
-                        hr(),
-                        fluidRow(column(3, verbatimTextOutput("value")))
+                             value = FALSE
+                           ) # end kelp switch
+                        
                          ), # end sidebarPanel
 
                        mainPanel(
@@ -281,8 +281,8 @@ ui <- fluidPage(
                         
                          # year selector for first 2 graphs
                          sliderInput("biodiversity_year_selector", "Select Year:",
-                                     min = min(biodiversity$year),
-                                     max = max(biodiversity$year),
+                                     min = min(total_all$year),
+                                     max = max(total_all$year),
                                      value = 2021,
                                      step = 1,
                                      sep = ""), # end slider input
@@ -344,25 +344,29 @@ coeff <- 10^7
   })
   # output for date slider
   
+# Functions for Kelp Biodiversity  
+  
+  ## Kelp option button:
   kelp_reactive <- reactive({
     kelp_bio %>%
-      filter(fronds == input$kelp_selector)
-  })
-  
-  # Functions for Kelp Biodiversity  
+      filter(total_fronds %in% input$kelp_viewer) %>%
+      filter(site == input$pick_location)
+  }) # end kelp button
   
   ## Biodiversity Plot: 
   bio_reactive <- reactive({
-    biodiversity %>% 
+    total_all %>% 
       filter(common_name %in% input$pick_species) %>%
       filter(year == input$biodiversity_year_selector)
   }) # end plot
   
   ## Timeseries Plot:
   time_reactive <- reactive({
-    biodiversity %>%
+    total_all %>%
       filter(common_name %in% input$pick_species) %>%
-      filter(site == input$pick_location)
+      filter(site == input$pick_location) %>%
+      filter(year == year) %>%
+      filter(total_fronds == total_fronds)
   }) # end plot
 
   ## Static Plot:
@@ -439,22 +443,26 @@ output$whichplot <- renderPlot({
 
 ## Species/Location Plot
 output$biodiversityplot <- renderPlot({
-  plot = ggplot(data = bio_reactive()) +
-    geom_col(aes(x = site, y = total_count, fill = common_name), position = "dodge") +
-    geom_col(data = kelp_reactive(), aes(x = site, y = fronds, fill = fronds)) +
+  plot <- ggplot(data = bio_reactive()) +
+    geom_col(aes(x = site, y = total_count, fill = common_name)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1)) +
     labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n")
   plot
   })
-
+ 
 ## Timeseries plot
 output$timeseries <- renderPlot({
-  plot = ggplot(data = time_reactive()) +
-    geom_line(aes(x = year, y = total_count, color = common_name)) +
+  plot <- ggplot() +
+    geom_line(data = time_reactive(), aes(x = year, y = total_count, color = common_name)) +
     theme_minimal() +
     labs(title = "Site-Specific Time Series", x = "Year", y = "Count") +
     scale_fill_manual("Species")
+  
+  if(input$kelp_viewer == TRUE) {
+    plot <- plot +
+      geom_line(aes(x = year, y = total_fronds, color = total_fronds)) 
+  }
   plot
 })
 
