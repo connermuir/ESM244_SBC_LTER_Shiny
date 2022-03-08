@@ -8,37 +8,39 @@ library(janitor)
 library(thematic)
 library(plotly)
 
+
+########
 ## DATA 
-#App fails unless this data set is included here 
 
-# Tmap data first:
+# ALL MAP DATA GOES HERE 
 
-#These are 3 subsets for SC island 
+#These are 3 subsets for SR island 
 
 #first 2010
-santa_cruz_kelp_2010 <- read_csv(here("data", "santa_cruz_kelp_2010.csv"))
+santa_rosa_kelp_2010 <- read_csv(here("data", "santa_cruz_kelp_2010.csv"))
 
-santa_cruz_kelp_2010_sf <- santa_cruz_kelp_2010 %>% 
+santa_rosa_kelp_2010_sf <- santa_rosa_kelp_2010 %>% 
   st_as_sf(coords = c('lon', 'lat'))
-st_crs(santa_cruz_kelp_2010_sf) <- 4326
+st_crs(santa_rosa_kelp_2010_sf) <- 4326
 
 # then 2015
-santa_cruz_kelp_2015 <- read_csv(here("data", "santa_cruz_kelp_2015.csv"))
+santa_rosa_kelp_2015 <- read_csv(here("data", "santa_cruz_kelp_2015.csv"))
 
-santa_cruz_kelp_2015_sf <- santa_cruz_kelp_2015 %>% 
+santa_rosa_kelp_2015_sf <- santa_rosa_kelp_2015 %>% 
   st_as_sf(coords = c('lon', 'lat'))
-st_crs(santa_cruz_kelp_2015_sf) <- 4326
+st_crs(santa_rosa_kelp_2015_sf) <- 4326
 
 #then 2020
-santa_cruz_kelp_2020 <- read_csv(here("data", "santa_cruz_kelp_2020.csv"))
+santa_rosa_kelp_2020 <- read_csv(here("data", "santa_cruz_kelp_2020.csv"))
 
-santa_cruz_kelp_2020_sf <- santa_cruz_kelp_2020 %>% 
+santa_rosa_kelp_2020_sf <- santa_rosa_kelp_2020 %>% 
   st_as_sf(coords = c('lon', 'lat'))
-st_crs(santa_cruz_kelp_2020_sf) <- 4326
+st_crs(santa_rosa_kelp_2020_sf) <- 4326
 
-#End subset map data
+# END MAP DATA 
 
-#Start other tabs data
+#########
+# ALL ABIOTIC FACTORS DATA GOES HERE 
 
 kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
 kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
@@ -64,7 +66,16 @@ kelp_factors_sub <- kelp_factors %>%
   filter(site_id %in% c(267:298)) %>% 
   group_by(site_id, year)
 
-# Biodiversity Data
+kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
+sites <- read_csv(here('data', 'site_locations.csv'))
+combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")  
+
+combined_kelp_sb <- combined_kelp %>% 
+  filter(site_id %in% c(267:298)) %>% 
+  group_by(site_id)
+
+#########
+# ALL COMMUNITY DATA GOES HERE 
 ## Fish:
 fish <- read_csv(here("data", "fish_abund.csv"))
 
@@ -128,7 +139,10 @@ kelp_bio <- kelp_abund_sub %>%
 
 # end Biodiversity data
 
-# Set up a custom theme 
+# END ALL DATA 
+
+##########
+# THEME GOES HERE 
 
 my_theme <- bs_theme(
   bg = "#F0FFF0",
@@ -137,131 +151,143 @@ my_theme <- bs_theme(
   base_fonts = font_google('Poppins'),
   version = 4, bootswatch = "sandstone")
 
-
+############
 # Define UI for application
 ui <- fluidPage(
   theme = my_theme,
         navbarPage("Dynamics of Santa Barbara Kelp Forests",
-            tabPanel("Project Overview", # Setting project description page
-                     mainPanel(
-                       fluidRow(
-                       column(10,
-                              strong("This app seeks to visualize the key factors influencing kelp forest health in Santa Barbara. It includes the following tabs:"),
-                              br(),
-                              br(),
-                              h3("Kelp Canopy:"), 
-                              "This is a visualization of quarterly kelp biomass estimates since 1984. Data is collected based on satellite imaging estimating giant kelp canopy biomass. Biomass data (wet weight, kg) are given for individual 30 x 30 meter pixels in the coastal areas extending from near Ano Nuevo, CA through the southern range limit in Baja California (including offshore islands), representing the range where giant kelp is the dominant canopy forming species.",
-                              br(),
-                              br(),
-                              strong("Data Citation:"),
-                              em("Bell, T, K. Cavanaugh, D. Siegel. 2022. SBC LTER: Time series of quarterly NetCDF files of kelp biomass in the canopy from Landsat 5, 7 and 8, since 1984 (ongoing) ver 15. Environmental Data Initiative."),
-                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.74", 
+            
+# START OPENING OVERVIEW TAB PANEL  
+
+        tabPanel("Project Overview", # Setting project description page
+          mainPanel(
+          fluidRow(
+            column(10,
+              strong("This app seeks to visualize the key factors influencing kelp forest health in Santa Barbara. It includes the following tabs:"),
+              br(),
+              br(),
+              h3("Kelp Canopy:"), 
+              "This is a visualization of quarterly kelp biomass estimates since 1984. Data is collected based on satellite imaging estimating giant kelp canopy biomass. Biomass data (wet weight, kg) are given for individual 30 x 30 meter pixels in the coastal areas extending from near Ano Nuevo, CA through the southern range limit in Baja California (including offshore islands), representing the range where giant kelp is the dominant canopy forming species.",
+              br(),
+              br(),
+              strong("Data Citation:"),
+              em("Bell, T, K. Cavanaugh, D. Siegel. 2022. SBC LTER: Time series of quarterly NetCDF files of kelp biomass in the canopy from Landsat 5, 7 and 8, since 1984 (ongoing) ver 15. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.74", 
+                     "Link"),
+              br(),
+              br(),
+              h3("Abiotic Factors:"), 
+              "This combines several SBC LTER datasets to visualize kelp abundance across the region and at specific sites compared to abiotic factors influencing productivity. Selected factors include temperature, nitrate concentrations, and wave height.",
+              br(),
+              br(),
+              strong("Data Citations:"),
+              br(),
+              strong("Kelp Anundance at LTER Sites:"),
+              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Abundance and size of Giant Kelp (Macrocystis Pyrifera), ongoing since 2000 ver 25. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.18", 
                                      "Link"),
-                              br(),
-                              br(),
-                              h3("Abiotic Factors:"), 
-                              "This combines several SBC LTER datasets to visualize kelp abundance across the region and at specific sites compared to abiotic factors influencing productivity. Selected factors include temperature, nitrate concentrations, and wave height.",
-                              br(),
-                              br(),
-                              strong("Data Citations:"),
-                              br(),
-                              strong("Kelp Anundance at LTER Sites:"),
-                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Abundance and size of Giant Kelp (Macrocystis Pyrifera), ongoing since 2000 ver 25. Environmental Data Initiative."),
-                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.18", 
+              br(),
+              br(),
+              strong("Temperature at LTER Sites:"),
+              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Bottom Temperature: Continuous water temperature, ongoing since 2000 ver 26. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.13", 
                                      "Link"),
-                              br(),
-                              br(),
-                              strong("Temperature at LTER Sites:"),
-                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Bottom Temperature: Continuous water temperature, ongoing since 2000 ver 26. Environmental Data Initiative."),
-                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.13", 
+              br(),
+              br(),
+              strong("Abiotic Factors Regionally:"),
+              em("Bell, T, K. Cavanaugh, D. Reuman, M. Castorani, L. Sheppard, J. Walter. 2021. SBC LTER: REEF: Macrocystis pyrifera biomass and environmental drivers in southern and central California ver 1. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.144", 
                                      "Link"),
-                              br(),
-                              br(),
-                              strong("Abiotic Factors Regionally:"),
-                              em("Bell, T, K. Cavanaugh, D. Reuman, M. Castorani, L. Sheppard, J. Walter. 2021. SBC LTER: REEF: Macrocystis pyrifera biomass and environmental drivers in southern and central California ver 1. Environmental Data Initiative."),
-                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.144", 
+              br(),
+              br(),
+              h3("Kelp Forest Community:"), 
+              "This combines several additional SBC LTER datasets to visualize abundance of species dependent on kelp across the region and at specific sites compared to overall kelp forest health. Selected species include .... PANEL 3 TBD.",
+              br(),
+              br(),
+              strong("Data Citations:"),
+              br(),
+              strong("Fish Abundance at LTER Sites:"),
+              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Fish abundance ver 36. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.17", 
                                      "Link"),
-                              br(),
-                              br(),
-                              h3("Kelp Forest Community:"), 
-                              "This combines several additional SBC LTER datasets to visualize abundance of species dependent on kelp across the region and at specific sites compared to overall kelp forest health. Selected species include .... PANEL 3 TBD.",
-                              br(),
-                              br(),
-                              strong("Data Citations:"),
-                              br(),
-                              strong("Fish Abundance at LTER Sites:"),
-                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Fish abundance ver 36. Environmental Data Initiative."),
-                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.17", 
-                                     "Link"),
-                              br(),
-                              br(),
-                              strong("Invertebrate Abundance at LTER Sties:"),
-                              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Invertebrate and algal density ver 28. Environmental Data Initiative."),
-                              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.19", 
+              br(),
+              br(),
+              strong("Invertebrate Abundance at LTER Sties:"),
+              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Invertebrate and algal density ver 28. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.19", 
                                      "Link")
-                              ),
-                       column(2,
-                            img(src = 'garbaldi.jpg', 
-                                     height =200, width = 300))
+                      ), #start picture column (SHOULD ADD MORE)
+            column(2,
+              img(src = 'garbaldi.jpg', height =200, width = 300))
                        ) # end fluidRow 1
                        )# end main panel 1
-                       ), # End tab panel 1
-            tabPanel("Kelp Canpoy", # start tab panel 2
-                     mainPanel(
-                       selectInput("mapyear", "Select Year:",
-                                           c("2010",
-                                             "2015",
-                                             "2020"),
-                                           selected = "2020"),
-                       tmapOutput('whichmap')
-                  
+                       ), # END TAB PANEL 1
+
+# START MAPPING PANEL     
+      tabPanel("Kelp Canpoy", # start tab panel 2
+        mainPanel(
+        selectInput("mapyear", "Select Year:",
+                    c("2010", "2015","2020"), selected = "2020"),
+                  tmapOutput('whichmap')
                        )# end main panel 2
                      ), # end tab panel 2
-            tabPanel("Abiotic Factors", #start panel 3
-                     sidebarLayout(# Adding sidebar selector for factors
-                                    sidebarPanel(
-                                        checkboxGroupInput(inputId = "pick_site",
-                                                           label = "Choose Site:",
-                                                           choices = unique(kelp_abund_sub$site),
-                                                           selected = "Naples" # This is what is selected automatically
-                                                   ) # end checkboxGroupInput
+
+# START ABIOTIC FACTORS PANEL 
+
+      tabPanel("Abiotic Factors", #start panel 3
+          sidebarLayout(# Adding sidebar selector for factors
+                        sidebarPanel(
+                          conditionalPanel( #Start conditional widgets here 
+                          condition = "input.plotnumber == 'Abundance by Site'", 
+                          checkboxGroupInput(inputId = "pick_site",
+                                             label = "Choose Site:",
+                                             choices = unique(kelp_abund_sub$site),
+                                             selected = "Naples" # This is what is selected automatically
+                                            ) # end checkboxGroupInput
+                                           ) # end conditional widget (it works)
                                       ), # end sidebarPanel
                                     
-                                      mainPanel(
-                                        selectInput("plotnumber", "Select Plot:",
-                                                    c("Abundance by Site",
-                                                      "Nitrate Concentration",
-                                                      "Wave Height"),
-                                                    selected = "Abundance by Site"), #trying multiple options, end select
-                                        plotOutput('whichplot'),
-                                        sliderInput("year_selector", "Select Year Range",
-                                                    min = min(kelp_factors_sub$year),
-                                                    max = max(kelp_factors_sub$year),
-                                                    value = c(1987,2019),
-                                                    step = 1,
-                                                    sep = ""
+                            mainPanel(
+                              selectInput("plotnumber", "Select Plot:",
+                                          c("Abundance by Site",
+                                            "Nitrate Concentration",
+                                            "Wave Height"),
+                                            selected = "Abundance by Site"), #trying multiple options, end select
+                                plotOutput('whichplot'),
+                                conditionalPanel( #another conditional panel
+                                  condition = 
+                                    "input.plotnumber == 'Nitrate Concentration'",
+                                  sliderInput("year_selector", "Select Year Range",
+                                            min = min(kelp_factors_sub$year),
+                                            max = max(kelp_factors_sub$year),
+                                            value = c(1987,2019),
+                                            step = 1,
+                                            sep = ""
                                                     )
+                                      ) # End conditional panel
                                       ) # end main panel 2
                                       ) #end sidebar layout 2
                       ), # end tabpanel 3
+
+# START COMMUNITY TAB
             
-            tabPanel("Kelp Forest Community", # Start panel 4
-                     sidebarLayout(# Adding sidebar selector for factors
-                       sidebarPanel(
+tabPanel("Kelp Forest Community", # Start panel 4
+        sidebarLayout(# Adding sidebar selector for factors
+        sidebarPanel(
               
-                       # input selector panel for species (graph 1/2)
-                           selectInput(inputId = "pick_species",
-                                            label = "Choose Species: \n (to remove species selection, click and press 'delete')",
-                                            choices = unique(biodiversity$common_name),
-                                     selected = "Aggregating anemone",
-                                     multiple = TRUE), # end selectInput
+        # input selector panel for species (graph 1/2)
+        selectInput(inputId = "pick_species",
+                    label = "Choose Species: \n (to remove species selection, click and press 'delete')",
+                    choices = unique(biodiversity$common_name),
+                    selected = "Aggregating anemone",
+                    multiple = TRUE), # end selectInput
                            
-                         # input selector panel for location
-                         selectInput(inputId = "pick_location",
-                                     label = "Choose Site:",
-                                     choices = unique(biodiversity$site),
-                                     selected = "Naples",
-                                     multiple = FALSE
+          # input selector panel for location
+          selectInput(inputId = "pick_location",
+                      label = "Choose Site:",
+                      choices = unique(biodiversity$site),
+                      selected = "Naples",
+                      multiple = FALSE
                          ), # end selectInput
                         
                         # kelp on/off switch (graph 1/2/3)
@@ -308,30 +334,40 @@ ui <- fluidPage(
                      ) #end navbarPage
                      ) # end ui
 
-# Create server object 
+
+############
+# SERVER CODE 
 
 server <- function(input, output) { 
   
-# Need data frames here !!! 
+
+###########
+# MAP PANEL OUTPUTS ALL GO HERE 
   
-# Data for panel 1
-kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
-sites <- read_csv(here('data', 'site_locations.csv'))
-combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")  
- 
-combined_kelp_sb <- combined_kelp %>% 
-  filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id)
-
-
-# End Panel 1 Data 
-
-# Additional panel 2 data
+  output$whichmap <- renderTmap({
+    if(input$mapyear == "2010"){
+      map = tm_shape(santa_rosa_kelp_2010_sf) +
+        tm_legend(title = "Santa Rosa Kelp Biomass in 2010 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')} # end 2010 option
+    
+    if(input$mapyear == "2015"){
+     map = tm_shape(santa_rosa_kelp_2015_sf) +
+        tm_legend(title = "Santa ROsa Kelp Biomass in 2015 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')} # end 2015 option 
+    
+    if(input$mapyear == "2020"){
+      map = tm_shape(santa_rosa_kelp_2020_sf) +
+        tm_legend(title = "Santa Rosa Kelp Biomass in 2020 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')
+      } # end 2020 option
+    map # call the option 
+  }) # end this function for selecting year maps 
+  
+################  
+# ABIOTIC FACTORS OUTPUTS ALL GO HERE  
 
 coeff <- 10^7
 #This is the best scaling factor for the nitrate and wave graph after trying a few 
-
-# Function for LTER Site Kelp Surveys 
   
   abund_reactive <- reactive({
     kelp_abund_sub %>%
@@ -343,56 +379,6 @@ coeff <- 10^7
       filter(year %in% input$year_selector[1]:input$year_selector[2])
   })
   # output for date slider
-  
-  kelp_reactive <- reactive({
-    kelp_bio %>%
-      filter(fronds == input$kelp_selector)
-  })
-  
-  # Functions for Kelp Biodiversity  
-  
-  ## Biodiversity Plot: 
-  bio_reactive <- reactive({
-    biodiversity %>% 
-      filter(common_name %in% input$pick_species) %>%
-      filter(year == input$biodiversity_year_selector)
-  }) # end plot
-  
-  ## Timeseries Plot:
-  time_reactive <- reactive({
-    biodiversity %>%
-      filter(common_name %in% input$pick_species) %>%
-      filter(site == input$pick_location)
-  }) # end plot
-
-  ## Static Plot:
-  total_reactive <- reactive({
-    total_bio_subset %>%
-      filter(common_name %in% input$species)
-  }) # end plot
-  
-  # Output for tmap kelp plot 
-  
-  output$whichmap <- renderTmap({
-    if(input$mapyear == "2010"){
-      map = tm_shape(santa_cruz_kelp_2010_sf) +
-        tm_legend(title = "Santa Cruz Kelp Biomass in 2010 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')} # end 2010 option
-    
-    if(input$mapyear == "2015"){
-     map = tm_shape(santa_cruz_kelp_2015_sf) +
-        tm_legend(title = "Santa Cruz Kelp Biomass in 2015 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')} # end 2015 option 
-    
-    if(input$mapyear == "2020"){
-      map = tm_shape(santa_cruz_kelp_2020_sf) +
-        tm_legend(title = "Santa Cruz Kelp Biomass in 2020 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')
-      } # end 2020 option
-    map # call the option 
-  }) # end this function for selecting year maps 
-  
-  # Output for LTER Site Kelp Surveys 
   
 output$whichplot <- renderPlot({
   if(input$plotnumber == "Abundance by Site"){
@@ -435,7 +421,35 @@ output$whichplot <- renderPlot({
   plot # call the option 
   }) # end this function for selecting factor graphs 
 
-#Biodiversity plot
+
+############
+# COMMUNITY TAB OUTPUTS ALL GO HERE 
+
+kelp_reactive <- reactive({
+  kelp_bio %>%
+    filter(fronds == input$kelp_selector)
+})
+
+
+## Biodiversity Plot: 
+bio_reactive <- reactive({
+  biodiversity %>% 
+    filter(common_name %in% input$pick_species) %>%
+    filter(year == input$biodiversity_year_selector)
+}) # end plot
+
+## Timeseries Plot:
+time_reactive <- reactive({
+  biodiversity %>%
+    filter(common_name %in% input$pick_species) %>%
+    filter(site == input$pick_location)
+}) # end plot
+
+## Static Plot:
+total_reactive <- reactive({
+  total_bio_subset %>%
+    filter(common_name %in% input$species)
+}) # end plot
 
 ## Species/Location Plot
 output$biodiversityplot <- renderPlot({
@@ -468,7 +482,9 @@ output$statictotals <- renderPlot({
          y = "Count")
   plot
 })
-} # end all sever 
+} 
+
+# END ALL SERVER 
 
 thematic_shiny()
 
