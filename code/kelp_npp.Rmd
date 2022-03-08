@@ -36,6 +36,34 @@ kelp_density <- read_csv(here('data', 'Annual_All_Species_Biomass_at_transect_20
 # This worked: Note: fread was much faster then read_csv
 
 ```
+```{r}
+kelp_abund_sub <- kelp_abund %>%
+  clean_names() %>% 
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
+  group_by(site) %>% 
+  na_if(-99999) %>% 
+  drop_na()
+
+kelp_abund_summary <- kelp_abund_sub %>%
+  select(site, fronds) %>% 
+  group_by(site) %>% 
+  slice(1:5) %>% 
+  mutate(avg_fronds = mean(fronds)) %>% 
+  arrange(-avg_fronds)
+  
+  
+  
+```
 
 
 ```{r}
@@ -61,6 +89,17 @@ kelp_density_sub <- kelp_density %>%
   ungroup()
   
 # This uses the same data set as Li 
+  
+kelp_density_summary <- kelp_density_sub %>%
+  mutate(year = year(date)) %>% 
+  group_by(year,site) %>%
+  summarise(density=mean(density,na.rm=T)) %>%
+  ungroup()
+
+kelp_density_year <- kelp_density_summary %>%
+  group_by(site) %>% 
+  summarise(density= round(mean(density,na.rm=T), 2)) %>% 
+  arrange(-density)
   
 
 # Now creating a subset of  the temperature data and creating a smaller csv for github 

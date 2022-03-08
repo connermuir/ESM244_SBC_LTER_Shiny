@@ -8,6 +8,7 @@ library(janitor)
 library(thematic)
 library(plotly)
 library(cowplot)
+library(paletteer)
 
 
 ########
@@ -66,6 +67,8 @@ kelp_abund_sub <- kelp_abund %>%
   na_if(-99999) %>% 
   drop_na()
 
+# KELP DENSITY SUBSETS 
+
 kelp_density_sub <- kelp_density %>%
   clean_names() %>% 
   mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
@@ -84,6 +87,20 @@ kelp_density_sub <- kelp_density %>%
   na_if(-99999) %>% 
   summarise(density=mean(density,na.rm=T)) %>% 
   ungroup()
+
+# DATA FOR SUMMARY TABLE
+kelp_density_summary <- kelp_density_sub %>%
+  mutate(year = year(date)) %>% 
+  group_by(year,site) %>%
+  summarise(density=mean(density,na.rm=T)) %>%
+  ungroup()
+
+kelp_density_year <- kelp_density_summary %>%
+  group_by(site) %>% 
+  summarise(density= round(mean(density,na.rm=T), 2)) %>% 
+  arrange(-density) %>% 
+  rename("Average Density" = density,
+         "Site" = site)
 
 site_list <- unique(kelp_density_sub$site)
 
@@ -272,14 +289,21 @@ ui <- fluidPage(
                                              selected = "Naples" # This is what is selected automatically
                                             ) # end checkboxGroupInput
                                            ), # end conditional widget (it works)
-                                       #add another conditional 
+                                       
+                          #add another conditional for site selector 
                           conditionalPanel( #Start other conditional widgets here 
                           condition = "input.plotnumber == 'Density and Temperature by Site'", 
                           checkboxGroupInput(inputId = "pick_site_density",
                                              label = "Choose Site:",
                                              choices = unique(kelp_density_sub$site),
                                              selected = site_list) # This is what is selected automatically
-                          ) # end other conditional
+                          ), # end other conditional
+                          
+                          #Add another conditional fro table 
+                          conditionalPanel( # Conditional table for density by reef 
+                            condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                            tableOutput('density_table') 
+                          ), # end other conditional
                         ), # end sidebar panel 
                  
                             mainPanel(
@@ -292,12 +316,12 @@ ui <- fluidPage(
                                 plotOutput('whichplot'),
                                
                           
-                              conditionalPanel( #Start other conditional widgets here 
+                              conditionalPanel( # Conditional panel for temp plot 
                                 condition = "input.plotnumber == 'Density and Temperature by Site'", 
                                 plotOutput('temp_plot') 
                               ), # end other conditional
                               
-                                conditionalPanel( #another conditional panel
+                                conditionalPanel( # Conditional panel for year slider
                                   condition = 
                                     "input.plotnumber == 'Nitrate Concentration (Regional)'",
                                   sliderInput("year_selector", "Select Year Range",
@@ -305,12 +329,22 @@ ui <- fluidPage(
                                             max = max(kelp_factors_sub$year),
                                             value = c(1987,2019),
                                             step = 1,
-                                            sep = ""
-                                                    )
-                                      ) # End conditional panel
-                                      ) # end main panel 2
-                                      ) #end sidebar layout 2
-                      ), # end tabpanel 3
+                                            sep = "")
+                                      ), # End conditional panel
+                              
+                              # conditionalPanel for text for abundance graph
+                              conditionalPanel(
+                              condition = "input.plotnumber == 'Abundance by Site'", 
+                               h3("Key Takeaways:"),
+                               br(),
+                               tags$ul(
+                                 tags$li("Kelp abundance, measured by frond counts from diver surveys, varied widely across the 11 LTER reef sites."), 
+                                 tags$li("Second list item"), 
+                                 tags$li("Third list item")),
+                              ) #end conditional text for abundance
+                      ) # end main panel 3
+                      ) # End sidebar layout
+                      ), # END ABIOTIC FACTORS PANEL 
 
 # START COMMUNITY TAB
             
@@ -457,7 +491,13 @@ output$temp_plot <- renderPlot({
       theme_minimal() 
     plot
   })
+
+# Standalone Density Table 
+
+output$density_table <- renderTable(kelp_density_year)
   
+# PLOT FOR LOOP
+
 output$whichplot <- renderPlot({
   if(input$plotnumber == "Abundance by Site"){
     plot = ggplot(data = abund_reactive(), 
@@ -469,8 +509,10 @@ output$whichplot <- renderPlot({
  
   if(input$plotnumber == "Density and Temperature by Site"){
     plot =  ggplot(data = density_reactive(), aes(x = date, y = density)) +
-      geom_col(aes(fill = site), width = 50) +
+      geom_col(aes(fill = site), width = 100) +
+      scale_fill_paletteer_d("khroma::land") +
       theme_minimal() +
+      theme(legend.position = "top") +
       labs(y = "Average Density (Coverage Per Square Meter)")}
   
    if(input$plotnumber == "Nitrate Concentration (Regional)"){
