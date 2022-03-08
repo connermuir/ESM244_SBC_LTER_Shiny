@@ -1,5 +1,4 @@
 library(shiny)
-library(tidyverse)
 library(bslib)
 library(tmap)
 library(sf)
@@ -9,7 +8,8 @@ library(thematic)
 library(plotly)
 library(cowplot)
 library(paletteer)
-
+library(tidyverse)
+library(lubridate)
 
 ########
 ## DATA 
@@ -104,6 +104,10 @@ kelp_density_year <- kelp_density_summary %>%
 
 # DATA FOR NITRATE SUMMARY
 # Table summary of nitrogen and temp
+kelp_factors_sub <- kelp_factors %>% 
+  filter(site_id %in% c(267:298)) %>% 
+  group_by(site_id, year)
+
 n_summary <- kelp_factors_sub %>% 
   group_by(year) %>% 
   summarize(no3 = mean(no3, na.rm = T))
@@ -123,10 +127,6 @@ n_t_join <-
 #site lsit for reactive input 
 
 site_list <- unique(kelp_density_sub$site)
-
-kelp_factors_sub <- kelp_factors %>% 
-  filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id, year)
 
 kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
 sites <- read_csv(here('data', 'site_locations.csv'))
