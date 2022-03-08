@@ -88,7 +88,7 @@ kelp_density_sub <- kelp_density %>%
   summarise(density=mean(density,na.rm=T)) %>% 
   ungroup()
   
-# This uses the same data set as Li 
+#Subset for sumamry table on density
   
 kelp_density_summary <- kelp_density_sub %>%
   mutate(year = year(date)) %>% 
@@ -213,6 +213,20 @@ combined_no3 <- ggplot(data = kelp_factors_sub,
     sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
   ) +
   theme_bw()
+
+
+# Table summary of nitrogen and temp
+n_summary <- kelp_factors_sub %>% 
+  group_by(year) %>% 
+  summarize(no3 = mean(no3, na.rm = T))
+
+t_summary <- temp_day_sub %>% 
+  mutate(year = year(date)) %>% 
+  group_by(year) %>% 
+  summarize(year_avg_temp = mean(day_avg_temp))
+
+n_t_join <- 
+  inner_join(n_summary, t_summary, by = "year")
 ```
 
 ```{r}
@@ -231,6 +245,8 @@ combined_waves <- ggplot(data = kelp_factors_sub,
   ) +
   theme_bw()
 ggplotly(combined_waves)
+
+
 
 ```
 

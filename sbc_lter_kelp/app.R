@@ -88,7 +88,7 @@ kelp_density_sub <- kelp_density %>%
   summarise(density=mean(density,na.rm=T)) %>% 
   ungroup()
 
-# DATA FOR SUMMARY TABLE
+# DATA FOR DENSITY SUMMARY TABLE
 kelp_density_summary <- kelp_density_sub %>%
   mutate(year = year(date)) %>% 
   group_by(year,site) %>%
@@ -101,6 +101,26 @@ kelp_density_year <- kelp_density_summary %>%
   arrange(-density) %>% 
   rename("Average Density" = density,
          "Site" = site)
+
+# DATA FOR NITRATE SUMMARY
+# Table summary of nitrogen and temp
+n_summary <- kelp_factors_sub %>% 
+  group_by(year) %>% 
+  summarize(no3 = mean(no3, na.rm = T))
+
+t_summary <- temp_day_sub %>% 
+  mutate(year = year(date)) %>% 
+  group_by(year) %>% 
+  summarize(year_avg_temp = mean(day_avg_temp))
+
+n_t_join <- 
+  inner_join(n_summary, t_summary, by = "year") %>% 
+  mutate(year = as.character(year)) %>% 
+  rename("Year" = year,
+         "Average Nitrate (ug/M)" = no3,
+         "Average Yearly Temp (C)" = year_avg_temp)
+
+#site lsit for reactive input 
 
 site_list <- unique(kelp_density_sub$site)
 
@@ -299,11 +319,18 @@ ui <- fluidPage(
                                              selected = site_list) # This is what is selected automatically
                           ), # end other conditional
                           
-                          #Add another conditional fro table 
+                          #Add another conditional for density table 
                           conditionalPanel( # Conditional table for density by reef 
                             condition = "input.plotnumber == 'Density and Temperature by Site'", 
                             tableOutput('density_table') 
                           ), # end other conditional
+                          
+                          #Add another conditional for nitrogen and temp table 
+                          conditionalPanel( # Conditional table for density by reef 
+                            condition = "input.plotnumber == 'Nitrate Concentration (Regional)'", 
+                            tableOutput('n_t_table') 
+                          ) # end other conditional
+                          
                         ), # end sidebar panel 
                  
                             mainPanel(
@@ -341,7 +368,28 @@ ui <- fluidPage(
                                  tags$li("Kelp abundance, measured by frond counts from diver surveys, varied widely across the 11 LTER reef sites."), 
                                  tags$li("Second list item"), 
                                  tags$li("Third list item")),
-                              ) #end conditional text for abundance
+                              ), #end conditional text for abundance
+                              
+                              #conditional text for density/temp option
+                              conditionalPanel(
+                                condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                                h3("Key Takeaways:"),
+                                br(),
+                                tags$ul(
+                                  tags$li("Kelp density, measured as percent cover per meter squared from diver surveys, varied widely across the 11 LTER reef sites."), 
+                                  tags$li("Temperature spikes from the 2013-2015 marine heat wave corresponded with declines in kelp density in some locations."), 
+                                  tags$li("Sites on the chanel islands had the lowest average density compared to mainland sites. This aligns with the patterns of loss seen since 2010 on Santa Rosa island.")),
+                              ), #end conditional text for abundance
+                              
+                              #conditional text for nitrate option
+                              conditionalPanel(
+                                condition = "input.plotnumber == 'Nitrate Concentration (Regional)'", 
+                                h3("Key Takeaways:"),
+                                br(),
+                                tags$ul(
+                                  tags$li("Low levels of available nitrate at the regional level corresponsed to heat wave events."), 
+                                  tags$li("Temperature spikes typically reduce available nitrate, which lowers kelp productivity and resistance to other stressors.")),
+                              ) #end conditional text for nitrate
                       ) # end main panel 3
                       ) # End sidebar layout
                       ), # END ABIOTIC FACTORS PANEL 
@@ -488,13 +536,18 @@ output$temp_plot <- renderPlot({
     plot = ggplot(data = temp_day_sub, aes(x = date, y = day_avg_temp)) +
       geom_smooth(color = "coral") +
       labs(y = "Average Temperature - All Sites (Degrees Celsius)") +
-      theme_minimal() 
+      theme_minimal() +
+      theme(axis.title.x = element_blank())
     plot
   })
 
 # Standalone Density Table 
 
 output$density_table <- renderTable(kelp_density_year)
+
+# Standalone nitrogen and temp table 
+
+output$n_t_table <- renderTable(n_t_join)
   
 # PLOT FOR LOOP
 
@@ -513,7 +566,9 @@ output$whichplot <- renderPlot({
       scale_fill_paletteer_d("khroma::land") +
       theme_minimal() +
       theme(legend.position = "top") +
-      labs(y = "Average Density (Coverage Per Square Meter)")}
+      theme(axis.title.x = element_blank()) +
+      labs(y = "Average Density (Coverage Per Square Meter)",
+           fill = 'Site')}
   
    if(input$plotnumber == "Nitrate Concentration (Regional)"){
     plot = ggplot(data = factors_reactive(), 
