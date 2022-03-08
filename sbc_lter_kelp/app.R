@@ -85,6 +85,8 @@ kelp_density_sub <- kelp_density %>%
   summarise(density=mean(density,na.rm=T)) %>% 
   ungroup()
 
+site_list <- unique(kelp_density_sub$site)
+
 kelp_factors_sub <- kelp_factors %>% 
   filter(site_id %in% c(267:298)) %>% 
   group_by(site_id, year)
@@ -423,7 +425,6 @@ server <- function(input, output) {
 coeff <- 10^7
 #This is the best scaling factor for the nitrate and wave graph after trying a few 
  
-site_list <- unique(kelp_density_sub$site)
 
   abund_reactive <- reactive({
     kelp_abund_sub %>%
