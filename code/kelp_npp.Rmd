@@ -25,10 +25,13 @@ library(zoo)
 kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
 
 #This is the more intricate data at the reef level based on diver surveys instead of the landsat images. 
-kelp_abund <- read_csv(here('data', 'Annual_All_Species_Biomass_at_transect_20210108.csv'))
+kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
 
-#This is also available at the site level. 
+#Temperatur is also available at the site level. 
 temp_big <- fread('https://pasta.lternet.edu/package/data/eml/knb-lter-sbc/13/26/d707a45a2cd6eee1d016d99844d537da')
+
+# tempo should be compared to this other kelp abundance doc:
+kelp_density <- read_csv(here('data', 'Annual_All_Species_Biomass_at_transect_20210108.csv'))
 
 # This worked: Note: fread was much faster then read_csv
 
@@ -36,9 +39,9 @@ temp_big <- fread('https://pasta.lternet.edu/package/data/eml/knb-lter-sbc/13/26
 
 
 ```{r}
-# This combines the reef-based diver survey dat around jelp density (based on fronds) with the temperature data also collected at the reef site level. 
+# This is a standalone data for fronds at the reef level  
 
-kelp_abund_sub <- kelp_abund %>%
+kelp_density_sub <- kelp_density %>%
   clean_names() %>% 
   mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
                           site == 'NAPL' ~ 'Naples',
@@ -52,13 +55,12 @@ kelp_abund_sub <- kelp_abund %>%
                           site == 'BULL' ~ 'Bulito',
                           site == 'GOLB' ~ 'Goleta Bay')) %>% 
   filter(coarse_grouping == "GIANT KELP") %>%
-  group_by(year, month, site, date) %>% 
+  group_by(site, date) %>% 
   na_if(-99999) %>% 
-  summarise(density=mean(density,na.rm=T)) 
-
-kelp_abund_sub$date <- as.yearmon(paste(kelp_abund_sub$year, kelp_abund_sub$month), "%Y %m")
+  summarise(density=mean(density,na.rm=T)) %>% 
+  ungroup()
   
-# This uses the same data set as Li and adds monthly means 
+# This uses the same data set as Li 
   
 
 # Now creating a subset of  the temperature data and creating a smaller csv for github 
@@ -83,21 +85,32 @@ temp_day_sub <- temp_big %>%
   
 write.csv(temp_day_sub, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\daily_avg_temp.csv', row.names = FALSE)
 
-# Have the csv now for github, going to wrangle to get mongthly averages. 
+# Have the csv now for github, going to wrangle to get mongthly averages.
+```
 
-temp_month_sub <- temp_day_sub %>% 
-  mutate(month = month(date)) %>% 
-  mutate(year = year(date)) %>%
-  as.yearmon(paste(year, month), "%Y %m") %>% 
-  group_by(site, year, month, date) %>% 
-  summarize(month_avg_temp = mean(day_avg_temp))  #since this is already a daily average 
- 
-temp_month_sub$date <- as.yearmon(paste(temp_month_sub$year, temp_month_sub$month), "%Y %m")
-         
+
+```{r}
+
+# Now lets just  work with the subset 
+temp_day_sub <- read_csv(here("data", "daily_avg_temp.csv"))
 
 temp_coeff <- 3
+#For a combined graph if we need one 
 
-combined_kelp_temp <- 
+temp_plot <- 
+  ggplot(data = temp_day_sub, aes(x = date, y = day_avg_temp)) +
+  geom_smooth(color = "coral") +
+  labs(y = "Average Temperature (Degrees Celsius)")
+temp_plot
+
+density_plot <- 
+  ggplot(data = kelp_density_sub, aes(x = date, y = density)) +
+  geom_col(color = "darkseagreen") +
+  labs(y = "Average Density (Coverage Per Square Meter)")
+density_plot
+  
+
+combined_plot <- 
 ggplot() +
   geom_smooth(data = temp_month_sub, aes(x = date, y = month_avg_temp),
               color = "cadetblue3") +  
@@ -111,11 +124,10 @@ ggplot() +
   ) +
   labs(title = "Kelp Density and Temperature by LTER Site Over Time") +
   theme_bw()
-  
-
-
-# This is the graph for specific LTER sites kelp and temperature. 
 ```
+
+
+
 
 ```{r}
 # This takes data collected across CA and filters down fro SB site range 
@@ -183,45 +195,4 @@ ggplotly(combined_waves)
 
 ```
 
-```{r}
-# Attempting to pull temp data from link: 
-
-temp_big <- fread('https://pasta.lternet.edu/package/data/eml/knb-lter-sbc/13/26/d707a45a2cd6eee1d016d99844d537da')
-
-# This worked: Note: fread was much faster then read_csv
-
-temp_day_sub <- temp_big %>% 
-  clean_names() %>% 
-  group_by(site, date_local) %>% 
-  summarize(day_avg_temp = mean(temp_c))
-  
-write.csv(temp_day_sub, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\daily_avg_temp.csv', row.names = FALSE)
-
-# Have the csv now for github, going to wrangle to get mongthly averages. 
-
-temp_month_sub <- temp_day_sub %>% 
-  mutate(month = month(date_local)) %>% 
-  mutate(year = year(date_local)) %>% 
-  group_by(site, month, year) %>% 
-  summarize(month_avg_temp = mean(day_avg_temp)) #since this is already a daily average 
-  
-kelp_abund_complete
-
-# Now we need to plot this 
-
-combined_temp <- ggplot(data = kelp_factors_sub, 
-                       aes(x = year, y = month_avg_temp)) +
-  # now integrate the wave curve with the kelp
-  geom_smooth(color = "cadetblue3") + #now we need to scale the kelp axis  
-  geom_col(data = kelp_factorsaes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
-  scale_y_continuous(
-    # Features of the first axis
-    name = "Average Wave Height (m)",
-    # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
-  ) +
-  theme_bw()
-ggplotly(combined_waves)
-
-```
 

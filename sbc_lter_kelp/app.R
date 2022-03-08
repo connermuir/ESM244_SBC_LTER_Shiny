@@ -7,6 +7,7 @@ library(here)
 library(janitor)
 library(thematic)
 library(plotly)
+library(cowplot)
 
 
 ########
@@ -42,6 +43,9 @@ st_crs(santa_rosa_kelp_2020_sf) <- 4326
 #########
 # ALL ABIOTIC FACTORS DATA GOES HERE 
 
+temp_day_sub <- read_csv(here("data", "daily_avg_temp.csv"))
+kelp_density <- read_csv(here('data', 'Annual_All_Species_Biomass_at_transect_20210108.csv'))
+
 kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
 kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
 
@@ -61,6 +65,25 @@ kelp_abund_sub <- kelp_abund %>%
   group_by(site) %>% 
   na_if(-99999) %>% 
   drop_na()
+
+kelp_density_sub <- kelp_density %>%
+  clean_names() %>% 
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
+  filter(coarse_grouping == "GIANT KELP") %>%
+  group_by(site, date) %>% 
+  na_if(-99999) %>% 
+  summarise(density=mean(density,na.rm=T)) %>% 
+  ungroup()
 
 kelp_factors_sub <- kelp_factors %>% 
   filter(site_id %in% c(267:298)) %>% 
@@ -246,19 +269,35 @@ ui <- fluidPage(
                                              choices = unique(kelp_abund_sub$site),
                                              selected = "Naples" # This is what is selected automatically
                                             ) # end checkboxGroupInput
-                                           ) # end conditional widget (it works)
-                                      ), # end sidebarPanel
-                                    
+                                           ), # end conditional widget (it works)
+                                       #add another conditional 
+                          conditionalPanel( #Start other conditional widgets here 
+                          condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                          checkboxGroupInput(inputId = "pick_site_density",
+                                             label = "Choose Site:",
+                                             choices = unique(kelp_density_sub$site),
+                                             selected = site_list) # This is what is selected automatically
+                          ) # end other conditional
+                        ), # end sidebar panel 
+                 
                             mainPanel(
                               selectInput("plotnumber", "Select Plot:",
                                           c("Abundance by Site",
-                                            "Nitrate Concentration",
-                                            "Wave Height"),
+                                            "Density and Temperature by Site",
+                                            "Nitrate Concentration (Regional)"
+                                           ),
                                             selected = "Abundance by Site"), #trying multiple options, end select
                                 plotOutput('whichplot'),
+                               
+                          
+                              conditionalPanel( #Start other conditional widgets here 
+                                condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                                plotOutput('temp_plot') 
+                              ), # end other conditional
+                              
                                 conditionalPanel( #another conditional panel
                                   condition = 
-                                    "input.plotnumber == 'Nitrate Concentration'",
+                                    "input.plotnumber == 'Nitrate Concentration (Regional)'",
                                   sliderInput("year_selector", "Select Year Range",
                                             min = min(kelp_factors_sub$year),
                                             max = max(kelp_factors_sub$year),
@@ -383,11 +422,24 @@ server <- function(input, output) {
 
 coeff <- 10^7
 #This is the best scaling factor for the nitrate and wave graph after trying a few 
-  
+ 
+site_list <- unique(kelp_density_sub$site)
+
   abund_reactive <- reactive({
     kelp_abund_sub %>%
       filter(site %in% input$pick_site)
   }) # end abund_reactive
+  
+
+  density_reactive <- reactive({
+    kelp_density_sub %>%
+      filter(site %in% input$pick_site_density)
+  })
+  
+  temp_reactive <- reactive({
+    kelp_density_sub %>%
+      filter(site %in% input$pick_site_density)
+  })
   
   factors_reactive <- reactive({
     kelp_factors_sub %>% 
@@ -395,16 +447,32 @@ coeff <- 10^7
   })
   # output for date slider
   
+# Standalone temp plot 
+  
+output$temp_plot <- renderPlot({
+    plot = ggplot(data = temp_day_sub, aes(x = date, y = day_avg_temp)) +
+      geom_smooth(color = "coral") +
+      labs(y = "Average Temperature - All Sites (Degrees Celsius)") +
+      theme_minimal() 
+    plot
+  })
+  
 output$whichplot <- renderPlot({
   if(input$plotnumber == "Abundance by Site"){
     plot = ggplot(data = abund_reactive(), 
            aes(x = year, y = fronds)) +
-      geom_col(aes(fill = site)) +
+      geom_col(aes(fill = site)) 
       theme_minimal() +
       labs(title = "Kelp Abundance Over Time", 
            x = "Year", y = "Kelp Fronds (number > 1m)")} # end abund_plot option
  
-   if(input$plotnumber == "Nitrate Concentration"){
+  if(input$plotnumber == "Density and Temperature by Site"){
+    plot =  ggplot(data = density_reactive(), aes(x = date, y = density)) +
+      geom_col(aes(fill = site), width = 50) +
+      theme_minimal() +
+      labs(y = "Average Density (Coverage Per Square Meter)")}
+  
+   if(input$plotnumber == "Nitrate Concentration (Regional)"){
     plot = ggplot(data = factors_reactive(), 
            aes(x = year, y = no3)) +
       # now integrate the nitrogen curve with the kelp
@@ -417,24 +485,10 @@ output$whichplot <- renderPlot({
         sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
       ) +
       theme_minimal()
-  } # end second option (nitrate)
-  
-  if(input$plotnumber == "Wave Height"){
-    plot = ggplot(data = factors_reactive(), 
-                  aes(x = year, y = waves)) +
-      # now integrate the wave curve with the kelp
-      geom_smooth(color = "cadetblue3") + #now we need to scale the kelp axis  
-      geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
-      scale_y_continuous(
-        # Features of the first axis
-        name = "Average Wave Height (m)",
-        # Add a second axis and specify its features
-        sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
-      ) +
-      theme_minimal()
   }
-  plot # call the option 
+  plot # end second option (nitrate)
   }) # end this function for selecting factor graphs 
+
 
 
 ############
