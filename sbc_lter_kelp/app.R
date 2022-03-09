@@ -288,13 +288,16 @@ ui <- fluidPage(
                        ), # END TAB PANEL 1
 
 # START MAPPING PANEL     
-      tabPanel("Kelp Canpoy", # start tab panel 2
-        mainPanel(
-        selectInput("mapyear", "Select Year:",
+      tabPanel("Kelp Canpoy",
+        sidebarLayout(# Adding sidebar selector for map years
+            sidebarPanel(
+               selectInput("mapyear", "Select Year:",
                     c("2010", "2015","2020"), selected = "2020"),
-                  tmapOutput('whichmap')
-                       )# end main panel 2
-                     ), # end tab panel 2
+               ),# end side panel 
+        mainPanel(
+                  tmapOutput('whichmap'))# end main panel 2
+                     ) # end sidebar layout 
+                     ), #end tab panel
 
 ###### START ABIOTIC FACTORS PANEL 
 
@@ -394,7 +397,7 @@ ui <- fluidPage(
                       ) # End sidebar layout
                       ), # END ABIOTIC FACTORS PANEL 
 
-# START COMMUNITY TAB
+##### START COMMUNITY TAB
             
 tabPanel("Kelp Forest Community", # Start panel 4
         sidebarLayout(# Adding sidebar selector for factors
