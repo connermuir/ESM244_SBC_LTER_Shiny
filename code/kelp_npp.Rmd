@@ -64,6 +64,7 @@ kelp_abund_summary <- kelp_abund_sub %>%
   
 ```
 
+# Kelp density metrics 
 
 ```{r}
 # This is a standalone data for fronds at the reef level  

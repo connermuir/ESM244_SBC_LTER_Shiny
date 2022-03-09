@@ -296,7 +296,7 @@ ui <- fluidPage(
                        )# end main panel 2
                      ), # end tab panel 2
 
-# START ABIOTIC FACTORS PANEL 
+###### START ABIOTIC FACTORS PANEL 
 
       tabPanel("Abiotic Factors", #start panel 3
           sidebarLayout(# Adding sidebar selector for factors
@@ -310,7 +310,7 @@ ui <- fluidPage(
                                             ) # end checkboxGroupInput
                                            ), # end conditional widget (it works)
                                        
-                          #add another conditional for site selector 
+                          # Add another conditional for site selector 
                           conditionalPanel( #Start other conditional widgets here 
                           condition = "input.plotnumber == 'Density and Temperature by Site'", 
                           checkboxGroupInput(inputId = "pick_site_density",
@@ -515,7 +515,7 @@ coeff <- 10^7
   
 
   density_reactive <- reactive({
-    kelp_density_sub %>%
+    kelp_density_summary %>%
       filter(site %in% input$pick_site_density)
   })
   
@@ -561,8 +561,8 @@ output$whichplot <- renderPlot({
            x = "Year", y = "Kelp Fronds (number > 1m)")} # end abund_plot option
  
   if(input$plotnumber == "Density and Temperature by Site"){
-    plot =  ggplot(data = density_reactive(), aes(x = date, y = density)) +
-      geom_col(aes(fill = site), width = 100) +
+    plot =  ggplot(data = density_reactive(), aes(x = year, y = density)) +
+      geom_col(aes(fill = site)) +
       scale_fill_paletteer_d("khroma::land") +
       theme_minimal() +
       theme(legend.position = "top") +
