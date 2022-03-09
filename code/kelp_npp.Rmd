@@ -7,15 +7,14 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
+
 library(here)
 library(janitor)
 library(cowplot)
 library(plotly)
 library(data.table)
 library(lubridate)
-library(zoo)
-
+library(tidyverse)
 ```
 
 ```{r}

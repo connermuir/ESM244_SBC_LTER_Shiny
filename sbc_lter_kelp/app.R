@@ -19,21 +19,21 @@ library(lubridate)
 #These are 3 subsets for SR island 
 
 #first 2010
-santa_rosa_kelp_2010 <- read_csv(here("data", "santa_cruz_kelp_2010.csv"))
+santa_rosa_kelp_2010 <- read_csv(here("data", "santa_rosa_kelp_2010.csv"))
 
 santa_rosa_kelp_2010_sf <- santa_rosa_kelp_2010 %>% 
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(santa_rosa_kelp_2010_sf) <- 4326
 
 # then 2015
-santa_rosa_kelp_2015 <- read_csv(here("data", "santa_cruz_kelp_2015.csv"))
+santa_rosa_kelp_2015 <- read_csv(here("data", "santa_rosa_kelp_2015.csv"))
 
 santa_rosa_kelp_2015_sf <- santa_rosa_kelp_2015 %>% 
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(santa_rosa_kelp_2015_sf) <- 4326
 
 #then 2020
-santa_rosa_kelp_2020 <- read_csv(here("data", "santa_cruz_kelp_2020.csv"))
+santa_rosa_kelp_2020 <- read_csv(here("data", "santa_rosa_kelp_2020.csv"))
 
 santa_rosa_kelp_2020_sf <- santa_rosa_kelp_2020 %>% 
   st_as_sf(coords = c('lon', 'lat'))
