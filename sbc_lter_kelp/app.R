@@ -39,6 +39,20 @@ santa_rosa_kelp_2020_sf <- santa_rosa_kelp_2020 %>%
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(santa_rosa_kelp_2020_sf) <- 4326
 
+# now make a summary table for all years 
+santa_rosa_kelp_all_years <- read_csv(here("data", "biomass_files", "santa_rosa_kelp_all_years.csv")) %>% 
+  group_by(year) %>% 
+  summarize(biomass = mean(biomass, na.rm = T))
+
+#sumamry for jsut 2010, 2015, and 2020
+santa_rosa_kelp_table <- santa_rosa_kelp_all_years %>% 
+  filter(year %in% c(2010, 2015, 2020)) %>%
+  group_by(year) %>% 
+  summarize(biomass = mean(biomass, na.rm = T)) %>% 
+  mutate(year = as.character(year)) %>% 
+  rename("Year" = year,
+         "Average Biomass (kg)" = biomass)
+  
 # END MAP DATA 
 
 #########
@@ -287,15 +301,27 @@ ui <- fluidPage(
                        )# end main panel 1
                        ), # END TAB PANEL 1
 
+###########
 # START MAPPING PANEL     
-      tabPanel("Kelp Canpoy",
+      tabPanel("Kelp Canopy",
         sidebarLayout(# Adding sidebar selector for map years
             sidebarPanel(
                selectInput("mapyear", "Select Year:",
                     c("2010", "2015","2020"), selected = "2020"),
+               tableOutput('santa_rosa_table'), # adding small summary table
+               plotOutput('santa_rosa_plot') #adding the trend over time
                ),# end side panel 
         mainPanel(
-                  tmapOutput('whichmap'))# end main panel 2
+                  tmapOutput('whichmap'),
+                    br(),
+                    br(),
+                    h3("Key Takeaways:"),
+                    br(),
+                    tags$ul(
+                      tags$li("Santa Rosa Island kelp biomass, estimated based on landsat imagery over a span of years shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
+                      tags$li("Biomass during the last decade reached an overall low point point sometime around 2015, coinciding with a particularly prolonged marine heat wave."), 
+                      tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp fover this time seems to have been more spatially concentrated compared to the kelp range seen in 2015."))
+                  )# end main panel 2
                      ) # end sidebar layout 
                      ), #end tab panel
 
@@ -485,6 +511,20 @@ server <- function(input, output) {
 ###########
 # MAP PANEL OUTPUTS ALL GO HERE 
   
+# Standaloine SR kelp biomass sumamry table 
+
+output$santa_rosa_table <- renderTable(santa_rosa_kelp_table)
+
+#Stand alone SR biomass plot over time 
+
+output$santa_rosa_plot <- renderPlot({
+  ggplot(data = santa_rosa_kelp_all_years, aes(x = year, y = biomass)) +
+    geom_smooth(color = "darkseagreen") +
+    labs(title = "Santa Rosa Kelp Trend (1984-2021)", y = "Biomass (kg)", x = "Year") +
+    theme_minimal()
+})
+ 
+# Santa Rosa Map For Loop 
   output$whichmap <- renderTmap({
     if(input$mapyear == "2010"){
       map = tm_shape(santa_rosa_kelp_2010_sf) +
@@ -543,6 +583,7 @@ output$temp_plot <- renderPlot({
       theme(axis.title.x = element_blank())
     plot
   })
+
 
 # Standalone Density Table 
 
