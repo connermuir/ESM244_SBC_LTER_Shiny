@@ -40,12 +40,36 @@ santa_rosa_kelp_2020_sf <- santa_rosa_kelp_2020 %>%
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(santa_rosa_kelp_2020_sf) <- 4326
 
-# now make a summary table for all years 
+###
+#These are 3 subsets for SB coast
+
+#first 2010
+sb_kelp_2010 <- read_csv(here("data", "biomass_files", "coast_biomass_2010.csv"))
+
+sb_kelp_2010_sf <- sb_kelp_2010 %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+st_crs(sb_kelp_2010_sf) <- 4326
+
+# then 2015
+sb_kelp_2015 <- read_csv(here("data", "biomass_files", "coast_biomass_2015.csv"))
+
+sb_kelp_2015_sf <- sb_kelp_2015 %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+st_crs(sb_kelp_2015_sf) <- 4326
+
+#then 2020
+sb_kelp_2020 <- read_csv(here("data", "biomass_files", "coast_biomass_2020.csv"))
+
+sb_kelp_2020_sf <- sb_kelp_2020 %>% 
+  st_as_sf(coords = c('lon', 'lat'))
+st_crs(sb_kelp_2020_sf) <- 4326
+
+# now make a summary table for all years for santa rosa
 santa_rosa_kelp_all_years <- read_csv(here("data", "biomass_files", "santa_rosa_kelp_all_years.csv")) %>% 
   group_by(year) %>% 
   summarize(biomass = mean(biomass, na.rm = T))
 
-#sumamry for jsut 2010, 2015, and 2020
+#summary for just 2010, 2015, and 2020 for santa rosa
 santa_rosa_kelp_table <- santa_rosa_kelp_all_years %>% 
   filter(year %in% c(2010, 2015, 2020)) %>%
   group_by(year) %>% 
@@ -53,7 +77,20 @@ santa_rosa_kelp_table <- santa_rosa_kelp_all_years %>%
   mutate(year = as.character(year)) %>% 
   rename("Year" = year,
          "Average Biomass (kg)" = biomass)
-  
+
+# now make a summary table for the coast for all years 
+sb_kelp_all_years <- read_csv(here("data", "biomass_files", "coast_biomass_all_years.csv")) %>% 
+  group_by(year) %>% 
+  summarize(biomass = mean(biomass, na.rm = T))
+
+#summary for just 2010, 2015, and 2020 for the coast
+sb_kelp_table <- sb_kelp_all_years %>% 
+  filter(year %in% c(2010, 2015, 2020)) %>%
+  group_by(year) %>% 
+  summarize(biomass = mean(biomass, na.rm = T)) %>% 
+  mutate(year = as.character(year)) %>% 
+  rename("Year" = year,
+         "Average Biomass (kg)" = biomass)  
 # END MAP DATA 
 
 #########
@@ -331,13 +368,34 @@ ui <- fluidPage(
       tabPanel("Kelp Canopy",
         sidebarLayout(# Adding sidebar selector for map years
             sidebarPanel(
-               selectInput("mapyear", "Select Year:",
+              
+              # Try conditional radio buttons to switch between islands and mainland data
+              radioButtons("radio", label = h3("Select Map Area"),
+                           choices = list("Santa Rosa Island", "SB Coast"), 
+                           selected = "Santa Rosa Island"),
+              # Run all remaining in this tab through conditional panels based on the radio choice
+              
+              conditionalPanel( #Start conditional side panel  
+              condition = "input.radio == 'Santa Rosa Island'",
+               selectInput("mapyear_sr", "Select Year:",
                     c("2010", "2015","2020"), selected = "2020"),
                tableOutput('santa_rosa_table'), # adding small summary table
                plotOutput('santa_rosa_plot') #adding the trend over time
-               ),# end side panel 
+               ),# end conditional side panel for SR 
+              
+              conditionalPanel( #Start conditional side panel  
+                condition = "input.radio == 'SB Coast'",
+                selectInput("mapyear_sb", "Select Year:",
+                            c("2010", "2015","2020"), selected = "2020"),
+                tableOutput('coast_table'), # adding small summary table
+                plotOutput('coast_plot') #adding the trend over time
+              ),# end conditional side panel for coast
+            ), # end sidebar panel 
+              
         mainPanel(
-                  tmapOutput('whichmap'),
+              conditionalPanel( #Start conditional main panel for SR maps
+              condition = "input.radio == 'Santa Rosa Island'",
+                  tmapOutput('whichmap_sr'),
                     br(),
                     br(),
                     h3("Key Takeaways:"),
@@ -346,7 +404,22 @@ ui <- fluidPage(
                       tags$li("Santa Rosa Island kelp biomass, estimated based on landsat imagery over a span of years shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
                       tags$li("Biomass during the last decade reached an overall low point point sometime around 2015, coinciding with a particularly prolonged marine heat wave."), 
                       tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp fover this time seems to have been more spatially concentrated compared to the kelp range seen in 2015."))
-                  )# end main panel 2
+                  ), # end conditional panel for SR maps
+              
+              conditionalPanel( #Start conditional main panel  for SB maps
+                condition = "input.radio == 'SB Coast'",
+                tmapOutput('whichmap_sb'),
+                br(),
+                br(),
+                h3("Key Takeaways:"),
+                br(),
+                tags$ul(
+                  tags$li("Santa Rosa Island kelp biomass, estimated based on landsat imagery over a span of years shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
+                  tags$li("Biomass during the last decade reached an overall low point point sometime around 2015, coinciding with a particularly prolonged marine heat wave."), 
+                  tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp fover this time seems to have been more spatially concentrated compared to the kelp range seen in 2015."))
+              ) # end SB coast maps 
+              )
+        # end main panel maps
                      ) # end sidebar layout 
                      ), #end tab panel
 
@@ -533,7 +606,7 @@ server <- function(input, output) {
 ###########
 # MAP PANEL OUTPUTS ALL GO HERE 
   
-# Standaloine SR kelp biomass sumamry table 
+# Standalone SR kelp biomass summary table 
 
 output$santa_rosa_table <- renderTable(santa_rosa_kelp_table)
 
@@ -545,27 +618,60 @@ output$santa_rosa_plot <- renderPlot({
     labs(title = "Santa Rosa Kelp Trend (1984-2021)", y = "Biomass (kg)", x = "Year") +
     theme_minimal()
 })
+
+# Standalone SB coast kelp biomass summary table 
+
+output$coast_table <- renderTable(sb_kelp_table)
+
+#Stand alone SR biomass plot over time 
+
+output$coast_plot <- renderPlot({
+  ggplot(data = sb_kelp_all_years, aes(x = year, y = biomass)) +
+    geom_smooth(color = "darkseagreen") +
+    labs(title = "Santa Barbara Kelp Trend (1984-2021)", y = "Biomass (kg)", x = "Year") +
+    theme_minimal()
+})
  
 # Santa Rosa Map For Loop 
-  output$whichmap <- renderTmap({
-    if(input$mapyear == "2010"){
-      map = tm_shape(santa_rosa_kelp_2010_sf) +
+  output$whichmap_sr <- renderTmap({
+    if(input$mapyear_sr == "2010"){
+      map_sr = tm_shape(santa_rosa_kelp_2010_sf) +
         tm_legend(title = "Santa Rosa Kelp Biomass in 2010 (kg)") +
         tm_dots('biomass', palette = 'BuGn')} # end 2010 option
     
-    if(input$mapyear == "2015"){
-     map = tm_shape(santa_rosa_kelp_2015_sf) +
-        tm_legend(title = "Santa ROsa Kelp Biomass in 2015 (kg)") +
+    if(input$mapyear_sr == "2015"){
+     map_sr = tm_shape(santa_rosa_kelp_2015_sf) +
+        tm_legend(title = "Santa Rosa Kelp Biomass in 2015 (kg)") +
         tm_dots('biomass', palette = 'BuGn')} # end 2015 option 
     
-    if(input$mapyear == "2020"){
-      map = tm_shape(santa_rosa_kelp_2020_sf) +
+    if(input$mapyear_sr == "2020"){
+      map_sr = tm_shape(santa_rosa_kelp_2020_sf) +
         tm_legend(title = "Santa Rosa Kelp Biomass in 2020 (kg)") +
         tm_dots('biomass', palette = 'BuGn')
       } # end 2020 option
-    map # call the option 
+    map_sr # call the option 
   }) # end this function for selecting year maps 
   
+  
+  # COAST Map For Loop 
+  output$whichmap_sb <- renderTmap({
+    if(input$mapyear_sb == "2010"){
+      map_sb = tm_shape(sb_kelp_2010_sf) +
+        tm_legend(title = "Santa Barbara Kelp Biomass in 2010 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')} # end 2010 option
+    
+    if(input$mapyear_sb == "2015"){
+      map_sb = tm_shape(sb_kelp_2015_sf) +
+        tm_legend(title = "Santa Barbara Kelp Biomass in 2015 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')} # end 2015 option 
+    
+    if(input$mapyear_sb == "2020"){
+      map_sb = tm_shape(sb_kelp_2020_sf) +
+        tm_legend(title = "Santa Barbara Kelp Biomass in 2020 (kg)") +
+        tm_dots('biomass', palette = 'BuGn')
+    } # end 2020 option
+    map_sb # call the option 
+  }) # end this function for selecting year maps 
 ################  
 # ABIOTIC FACTORS OUTPUTS ALL GO HERE  
 
