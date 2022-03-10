@@ -484,8 +484,8 @@ tabPanel("Kelp Forest Community", # Start panel 4
                         conditionalPanel( # start conditional for pick_year
                           condition = "input.pick_plot == 'Year and Species'",
                           sliderInput("biodiversity_year_selector", "Select Year:",
-                                     min = min(total_all$year),
-                                     max = max(total_all$year),
+                                     min = min(biodiversity$year),
+                                     max = max(biodiversity$year),
                                      value = 2021,
                                      step = 1,
                                      sep = ""
