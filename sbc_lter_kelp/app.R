@@ -195,11 +195,11 @@ total_bio_subset$site <- "All Sites"
 
 ## Kelp Totals/Site for biodiversity tab
 kelp_bio <- kelp_abund_sub %>%
-  select(year, site, fronds) %>%
-  group_by(year, site) %>%
+  select(year, fronds) %>%
+  group_by(year) %>%
   summarize(total_fronds = sum(fronds))
 
-total_all <- plyr::join(kelp_bio, biodiversity, by= c("site","year"), type = "full")
+#total_all <- plyr::join(kelp_bio, biodiversity, by= c("site","year"), type = "full")
 
 # end Biodiversity data
 
@@ -402,74 +402,79 @@ ui <- fluidPage(
 tabPanel("Kelp Forest Community", # Start panel 4
         sidebarLayout(# Adding sidebar selector for factors
         sidebarPanel(
-              
+          conditionalPanel( # start conditional for pick_species 
+            condition = "input.pick_plot == 'Year and Species'",  
+            selectInput(inputId = "pick_species",
+                        label = "Choose Species: \n (to remove species selection, click and press 'delete')",
+                        choices = unique(biodiversity$common_name),
+                        selected = "Aggregating anemone",
+                        multiple = TRUE
+                        ) # end pick_species
+          ), # end conditional for pick_species
+          
+          conditionalPanel( # start conditional for pick_location
+            condition = "input.pick_plot == 'Location and Species'",
+            selectInput(inputId = "pick_location", 
+                        label = "Choose Site:",
+                        choices = unique(biodiversity$site),
+                        selected = "Naples",
+                        multiple = FALSE
+                        ) # end selectInput
+            ), # end conditional for pick_location
+           
+          conditionalPanel( # start conditional for pick_species2
+            condition = "input.pick_plot == 'Location and Species'",
+            selectInput(inputId = "pick_species2",
+                        label = "Choose Species: (to remove species selection, click and press 'delete')",
+                        choices = unique(biodiversity$common_name),
+                        selected = "Aggregating anemone",
+                        multiple = TRUE
+                        ) # end pick_species2
+            ), # end conditional for pick_species2
+          
+          conditionalPanel( # start conditional for pick_species3
+            condition = "input.pick_plot == 'Species Specific Timeseries'",
+            selectInput(inputId = "pick_species3",
+                        label = "Choose Species: (to remove species selection, click and press 'delete')",
+                        choices = unique(total_bio_subset$common_name),
+                        selected = "Aggregating anemone",
+                        multiple = TRUE
+                        ) # end pick_species3
+            ),
+          ), # end sidebarPanel
 
-        # input selector panel for species (graph 1/2)
-        selectInput(inputId = "pick_species",
-                    label = "Choose Species: \n (to remove species selection, click and press 'delete')",
-                    choices = unique(biodiversity$common_name),
-                    selected = "Aggregating anemone",
-                    multiple = TRUE), # end selectInput
-                           
-          # input selector panel for location
-          selectInput(inputId = "pick_location",
-                      label = "Choose Site:",
-                      choices = unique(biodiversity$site),
-                      selected = "Naples",
-                      multiple = FALSE),
-
-                       # input selector panel for species (graph 1/2)
-                           selectInput(inputId = "pick_species",
-                                            label = "Choose Species: \n (to remove species selection, click and press 'delete')",
-                                            choices = unique(total_all$common_name),
-                                     selected = "Aggregating anemone",
-                                     multiple = TRUE), # end selectInput
-                           
-                         # input selector panel for location
-                         selectInput(inputId = "pick_location",
-                                     label = "Choose Site:",
-                                     choices = unique(total_all$site),
-                                     selected = "Naples",
-                                     multiple = FALSE
-
-                         ), # end selectInput
-                        
-                        # kelp on/off switch (graph 1/2/3)
-                           checkboxInput(
-                             inputId = "kelp_viewer",
-                             label = "Kelp", 
-                             value = FALSE
-                           ) # end kelp switch
-                        
-                         ), # end sidebarPanel
-
+################GRAPH 3#####################
                        mainPanel(
+                         selectInput("pick_plot", "Explore data by:",
+                                     c("Year and Species", "Location and Species", "Species Specific Timeseries"),
+                                     selected = "Year and Species"
+                                     ), # end select pick_plot
                          
-                         h3("Explore species counts by year and site:"),
-                        
-                         # year selector for first 2 graphs
-                         sliderInput("biodiversity_year_selector", "Select Year:",
+                         conditionalPanel( # Conditional panel for year and species plot
+                           condition = "input.pick_plot == 'Year and Species'", 
+                           plotOutput('biodiversityplot') 
+                         ), # end conditional plot
+                         
+                        conditionalPanel( # start conditional for pick_year
+                          condition = "input.pick_plot == 'Year and Species'",
+                          sliderInput("biodiversity_year_selector", "Select Year:",
                                      min = min(total_all$year),
                                      max = max(total_all$year),
                                      value = 2021,
                                      step = 1,
-                                     sep = ""), # end slider input
-                         
-                         plotOutput('biodiversityplot'),
-                      
-                         plotOutput('timeseries'),
-                         
-                         h3("Explore total species counts over all sites:"),
-                         
-                         # input selector for third graph 
-                         selectInput(inputId = "species",
-                                     label = "Choose Species:",
-                                     choices = unique(total_bio_subset$common_name),
-                                     selected = "Aggregating anemone",
-                                     multiple = TRUE), # end selectInput
-                                     
+                                     sep = ""
+                                     ) # end slider input
+                       ), # end conditional pick_year
+                       
+                       conditionalPanel( # conditional panel for location and species plot
+                         condition = "input.pick_plot == 'Location and Species'",
+                         plotOutput('timeseries')
+                         ), # end conditional plot
+                       
+                       conditionalPanel( # conditional panel for timeseries plot
+                         condition = "input.pick_plot == 'Species Specific Timeseries'",
                          plotOutput('statictotals')
-                      
+                       ), # end conditional plot
                        ) # end mainPanel
                      ) # end sidebarLayout
                      ) # end tab panel 4
@@ -595,12 +600,6 @@ output$whichplot <- renderPlot({
 ############
 # COMMUNITY TAB OUTPUTS ALL GO HERE 
 
-kelp_reactive <- reactive({
-  kelp_bio %>%
-    filter(fronds == input$kelp_selector)
-})
-
-
 ## Biodiversity Plot: 
 bio_reactive <- reactive({
   biodiversity %>% 
@@ -611,14 +610,14 @@ bio_reactive <- reactive({
 ## Timeseries Plot:
 time_reactive <- reactive({
   biodiversity %>%
-    filter(common_name %in% input$pick_species) %>%
+    filter(common_name %in% input$pick_species2) %>%
     filter(site == input$pick_location)
 }) # end plot
 
 ## Static Plot:
 total_reactive <- reactive({
   total_bio_subset %>%
-    filter(common_name %in% input$species)
+    filter(common_name %in% input$pick_species3)
 }) # end plot
 
 ## Species/Location Plot
@@ -633,22 +632,17 @@ output$biodiversityplot <- renderPlot({
  
 ## Timeseries plot
 output$timeseries <- renderPlot({
-  plot <- ggplot() +
-    geom_line(data = time_reactive(), aes(x = year, y = total_count, color = common_name)) +
+  plot <- ggplot(data = time_reactive()) +
+    geom_line(aes(x = year, y = total_count, color = common_name)) +
     theme_minimal() +
     labs(title = "Site-Specific Time Series", x = "Year", y = "Count") +
     scale_fill_manual("Species")
-  
-  if(input$kelp_viewer == TRUE) {
-    plot <- plot +
-      geom_line(aes(x = year, y = total_fronds, color = total_fronds)) 
-  }
   plot
 })
 
 ## Static Totals
 output$statictotals <- renderPlot({
-  plot = ggplot(data = total_reactive()) +
+  plot <- ggplot(data = total_reactive()) +
     geom_line(aes(x = year, y = total_count, color = common_name)) +
     theme_minimal() +
     labs(title = "Aggretgate Counts Over All Sites",
