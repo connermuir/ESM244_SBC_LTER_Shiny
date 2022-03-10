@@ -330,18 +330,10 @@ ui <- fluidPage(
       tabPanel("Abiotic Factors", #start panel 3
           sidebarLayout(# Adding sidebar selector for factors
                         sidebarPanel(
-                          conditionalPanel( #Start conditional widgets here 
-                          condition = "input.plotnumber == 'Abundance by Site'", 
-                          checkboxGroupInput(inputId = "pick_site",
-                                             label = "Choose Site:",
-                                             choices = unique(kelp_abund_sub$site),
-                                             selected = "Naples" # This is what is selected automatically
-                                            ) # end checkboxGroupInput
-                                           ), # end conditional widget (it works)
-                                       
-                          # Add another conditional for site selector 
+                          
+                          # Add conditional for site selector 
                           conditionalPanel( #Start other conditional widgets here 
-                          condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                          condition = "input.plotnumber == 'Kelp Density by Site'", 
                           checkboxGroupInput(inputId = "pick_site_density",
                                              label = "Choose Site:",
                                              choices = unique(kelp_density_sub$site),
@@ -350,7 +342,7 @@ ui <- fluidPage(
                           
                           #Add another conditional for density table 
                           conditionalPanel( # Conditional table for density by reef 
-                            condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                            condition = "input.plotnumber == 'Kelp Density by Site'", 
                             tableOutput('density_table') 
                           ), # end other conditional
                           
@@ -364,16 +356,15 @@ ui <- fluidPage(
                  
                             mainPanel(
                               selectInput("plotnumber", "Select Plot:",
-                                          c("Abundance by Site",
-                                            "Density and Temperature by Site",
+                                          c("Kelp Density by Site",
                                             "Nitrate Concentration (Regional)"
                                            ),
-                                            selected = "Abundance by Site"), #trying multiple options, end select
+                                            selected = "Kelp Density by Site"), #trying multiple options, end select
                                 plotOutput('whichplot'),
                                
                           
                               conditionalPanel( # Conditional panel for temp plot 
-                                condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                                condition = "input.plotnumber == 'Kelp Density by Site'", 
                                 plotOutput('temp_plot') 
                               ), # end other conditional
                               
@@ -388,20 +379,10 @@ ui <- fluidPage(
                                             sep = "")
                                       ), # End conditional panel
                               
-                              # conditionalPanel for text for abundance graph
-                              conditionalPanel(
-                              condition = "input.plotnumber == 'Abundance by Site'", 
-                               h3("Key Takeaways:"),
-                               br(),
-                               tags$ul(
-                                 tags$li("Kelp abundance, measured by frond counts from diver surveys, varied widely across the 11 LTER reef sites."), 
-                                 tags$li("Second list item"), 
-                                 tags$li("Third list item")),
-                              ), #end conditional text for abundance
                               
                               #conditional text for density/temp option
                               conditionalPanel(
-                                condition = "input.plotnumber == 'Density and Temperature by Site'", 
+                                condition = "input.plotnumber == 'Kelp Density by Site'", 
                                 h3("Key Takeaways:"),
                                 br(),
                                 tags$ul(
@@ -583,7 +564,7 @@ coeff <- 10^7
 output$temp_plot <- renderPlot({
     plot = ggplot(data = temp_day_sub, aes(x = date, y = day_avg_temp)) +
       geom_smooth(color = "coral") +
-      labs(y = "Average Temperature - All Sites (Degrees Celsius)") +
+      labs(y = "Average Temperature (Degrees Celsius)", title = "Average Temperature Across All Sites") +
       theme_minimal() +
       theme(axis.title.x = element_blank())
     plot
@@ -601,22 +582,15 @@ output$n_t_table <- renderTable(n_t_join)
 # PLOT FOR LOOP
 
 output$whichplot <- renderPlot({
-  if(input$plotnumber == "Abundance by Site"){
-    plot = ggplot(data = abund_reactive(), 
-           aes(x = year, y = fronds)) +
-      geom_col(aes(fill = site)) 
-      theme_minimal() +
-      labs(title = "Kelp Abundance Over Time", 
-           x = "Year", y = "Kelp Fronds (number > 1m)")} # end abund_plot option
  
-  if(input$plotnumber == "Density and Temperature by Site"){
+  if(input$plotnumber == "Kelp Density by Site"){
     plot =  ggplot(data = density_reactive(), aes(x = year, y = density)) +
       geom_col(aes(fill = site)) +
       scale_fill_paletteer_d("khroma::land") +
       theme_minimal() +
       theme(legend.position = "top") +
       theme(axis.title.x = element_blank()) +
-      labs(y = "Average Density (Coverage Per Square Meter)",
+      labs(y = "Average Density (Plants Per Square Meter)",
            fill = 'Site')}
   
    if(input$plotnumber == "Nitrate Concentration (Regional)"){
@@ -631,6 +605,9 @@ output$whichplot <- renderPlot({
         # Add a second axis and specify its features
         sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
       ) +
+      labs(title = "Regional Nitrate Levels and Kelp Biomass Estimates from Landsat Images",
+           caption = "*Red trend line indicates nitrate coincentrations and green bars are kelp biomass totals.") +
+      theme(plot.caption = element_text(hjust = 0, face = "bold.italic")) +
       theme_minimal()
   }
   plot # end second option (nitrate)
