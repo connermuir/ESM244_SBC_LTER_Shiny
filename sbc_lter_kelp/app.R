@@ -10,6 +10,7 @@ library(cowplot)
 library(paletteer)
 library(tidyverse)
 library(lubridate)
+library(DT)
 
 ########
 ## DATA 
@@ -100,6 +101,27 @@ kelp_density_sub <- kelp_density %>%
   group_by(site, date) %>% 
   na_if(-99999) %>% 
   summarise(density=mean(density,na.rm=T)) %>% 
+  ungroup()
+
+kelp_density_sub2 <- kelp_density %>%
+  clean_names() %>% 
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
+  filter(coarse_grouping == "GIANT KELP") %>%
+  group_by(site, year) %>% 
+  na_if(-99999) %>% 
+  summarise(density = mean(density, na.rm = T)) %>% 
+  group_by(year) %>%
+  summarise(density_total = sum(density)) %>%
   ungroup()
 
 # DATA FOR DENSITY SUMMARY TABLE
@@ -203,9 +225,12 @@ biodiversity <- fish_sub %>% full_join(inverts_sub)
 
 total_bio_subset <- biodiversity %>%
   group_by(common_name, year) %>%
-  summarise(total_count = sum(total_count))
+  summarise(total_count = sum(total_count)) 
 
-total_bio_subset$site <- "All Sites"
+total_bio_subset_table <- total_bio_subset %>%
+  rename("Species" = common_name,
+         "Year" = year,
+         "Total Count" = total_count)
 
 ## Kelp Totals/Site for biodiversity tab
 kelp_bio <- kelp_abund_sub %>%
@@ -448,18 +473,23 @@ tabPanel("Kelp Forest Community", # Start panel 4
                         multiple = TRUE
                         ) # end pick_species3
             ),
+          
+          conditionalPanel( # Conditional table for biodiversity table
+            condition = "input.pick_plot == 'Species Specific Timeseries'", 
+            DTOutput(outputId = 'biotable')
+          ), # end other conditional
+          
           ), # end sidebarPanel
 
-################GRAPH 3#####################
                        mainPanel(
                          selectInput("pick_plot", "Explore data by:",
-                                     c("Year and Species", "Location and Species", "Species Specific Timeseries"),
-                                     selected = "Year and Species"
+                                     c("Species Specific Timeseries","Year and Species", "Location and Species"),
+                                     selected = "Species Specific Timeseries"
                                      ), # end select pick_plot
                          
                          conditionalPanel( # Conditional panel for year and species plot
                            condition = "input.pick_plot == 'Year and Species'", 
-                           plotOutput('biodiversityplot') 
+                           plotlyOutput('biodiversityplot') 
                          ), # end conditional plot
                          
                         conditionalPanel( # start conditional for pick_year
@@ -475,13 +505,19 @@ tabPanel("Kelp Forest Community", # Start panel 4
                        
                        conditionalPanel( # conditional panel for location and species plot
                          condition = "input.pick_plot == 'Location and Species'",
-                         plotOutput('timeseries')
+                         plotlyOutput('timeseries')
                          ), # end conditional plot
                        
                        conditionalPanel( # conditional panel for timeseries plot
                          condition = "input.pick_plot == 'Species Specific Timeseries'",
-                         plotOutput('statictotals')
+                         plotlyOutput('statictotals')
                        ), # end conditional plot
+                       
+                       conditionalPanel( # conditional panel for kelp timeseries 
+                         condition = "input.pick_plot == 'Species Specific Timeseries'",
+                         plotlyOutput('kelp')
+                       ), # end conditional plot
+                       
                        ) # end mainPanel
                      ) # end sidebarLayout
                      ) # end tab panel 4
@@ -632,43 +668,59 @@ time_reactive <- reactive({
     filter(site == input$pick_location)
 }) # end plot
 
-## Static Plot:
+## Static Plot1:
 total_reactive <- reactive({
   total_bio_subset %>%
     filter(common_name %in% input$pick_species3)
 }) # end plot
 
 ## Species/Location Plot
-output$biodiversityplot <- renderPlot({
+output$biodiversityplot <- renderPlotly({
   plot <- ggplot(data = bio_reactive()) +
     geom_col(aes(x = site, y = total_count, fill = common_name)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1)) +
-    labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n")
+    labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n") +
+    theme(legend.position = "bottom") 
   plot
   })
  
 ## Timeseries plot
-output$timeseries <- renderPlot({
+output$timeseries <- renderPlotly({
   plot <- ggplot(data = time_reactive()) +
     geom_line(aes(x = year, y = total_count, color = common_name)) +
     theme_minimal() +
     labs(title = "Site-Specific Time Series", x = "Year", y = "Count") +
-    scale_fill_manual("Species")
+    scale_fill_manual("Species") +
+    theme(legend.position = "bottom") 
   plot
 })
 
 ## Static Totals
-output$statictotals <- renderPlot({
+output$statictotals <- renderPlotly({
   plot <- ggplot(data = total_reactive()) +
     geom_line(aes(x = year, y = total_count, color = common_name)) +
     theme_minimal() +
     labs(title = "Aggretgate Counts Over All Sites",
          x = "Year",
-         y = "Count")
+         y = "Count") +
+    theme(legend.position = "bottom") 
   plot
 })
-} 
+
+## Kelp
+output$kelp <- renderPlotly({
+  plot <- ggplot(data = kelp_density_sub2) +
+    geom_line(aes(x = year, y = density_total), color = 'darkgreen', size = .3) +
+    theme(legend.title = element_blank()) +
+    theme(legend.position = "bottom") +
+    labs(x = "Year", y = "Density (coverage per sq. meter)", fill = "Site") +
+    theme_minimal() 
+  plot
+})
+
+output$biotable <- renderDT({datatable(total_bio_subset)})
+}
 
 # END ALL SERVER 
 
