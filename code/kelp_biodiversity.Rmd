@@ -124,11 +124,17 @@ total_all <- plyr::join(kelp_bio, biodiversity, by= c("site","year"), type = "fu
 
 
 ```
+```{r}
+ggplot(data = kelp_density_sub2) +
+  geom_line(aes(x = year, y = density_total, color = site)) +
+  theme(legend.title = element_blank()) +
+  theme(legend.position = "bottom") +
+  labs(x = "Year", y = "Density (coverage per sq. meter)", fill = "Site") 
+```
 
-
-
-
-
+```{r}
+DT::datatable(total_bio_subset)
+```
 
 
 
