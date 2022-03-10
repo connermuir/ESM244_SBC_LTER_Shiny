@@ -124,6 +124,25 @@ kelp_density_sub2 <- kelp_density %>%
   summarise(density_total = sum(density)) %>%
   ungroup()
 
+kelp_density_sub3 <- kelp_density %>%
+  clean_names() %>% 
+  mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
+                          site == 'NAPL' ~ 'Naples',
+                          site == 'MOHK' ~ 'Mohawk',
+                          site == 'IVEE' ~ 'Isla Vista',
+                          site == 'AQUE' ~ 'Arroyo Quemado',
+                          site == 'ABUR' ~ 'Arroyo Burro',
+                          site == 'AHND' ~ 'Arroyo Hondo',
+                          site == 'SCTW' ~ 'Santa Cruz - Harbor',
+                          site == 'SCDI' ~ 'Santa Cruz - Diablo',
+                          site == 'BULL' ~ 'Bulito',
+                          site == 'GOLB' ~ 'Goleta Bay')) %>% 
+  filter(group == "ALGAE") %>%
+  select(year, site, density, common_name) %>%
+  group_by(site, year) %>% 
+  na_if(-99999) %>% 
+  summarise(density = mean(density, na.rm = T)) 
+
 # DATA FOR DENSITY SUMMARY TABLE
 kelp_density_summary <- kelp_density_sub %>%
   mutate(year = year(date)) %>% 
@@ -527,6 +546,11 @@ tabPanel("Kelp Forest Community", # Start panel 4
                          plotlyOutput('timeseries')
                          ), # end conditional plot
                        
+                       conditionalPanel( # conditional panel for location and species plot2
+                         condition = "input.pick_plot == 'Location and Species'",
+                         plotlyOutput('timeseries2')
+                       ), # end conditional plot
+                       
                        conditionalPanel( # conditional panel for timeseries plot
                          condition = "input.pick_plot == 'Species Specific Timeseries'",
                          plotlyOutput('statictotals')
@@ -691,6 +715,12 @@ time_reactive <- reactive({
     filter(site == input$pick_location)
 }) # end plot
 
+## Timeseries2 Plot:
+time2_reactive <- reactive({
+  kelp_density_sub3 %>%
+    filter(site == input$pick_location)
+})
+
 ## Static Plot1:
 total_reactive <- reactive({
   total_bio_subset %>%
@@ -703,7 +733,7 @@ output$biodiversityplot <- renderPlotly({
     geom_col(aes(x = site, y = total_count, fill = common_name)) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1)) +
-    labs(title = "Yearly Observations At All Sites", x = "Site", y = "\nCount\n") +
+    labs(title = "Yearly Observations At All Sites", x = "Site", y = "Count", fill = "Species") +
     theme(legend.position = "bottom") 
   plot
   })
@@ -713,9 +743,19 @@ output$timeseries <- renderPlotly({
   plot <- ggplot(data = time_reactive()) +
     geom_line(aes(x = year, y = total_count, color = common_name)) +
     theme_minimal() +
-    labs(title = "Site-Specific Time Series", x = "Year", y = "Count") +
-    scale_fill_manual("Species") +
-    theme(legend.position = "bottom") 
+    theme(legend.position = "bottom") +
+    labs(title = "Site-Specific Time Series", x = "Year", y = "Count", color = "Species") 
+  plot
+})
+
+## Timeseries2 plot
+output$timeseries2 <- renderPlotly({
+  plot <- ggplot(data = time2_reactive()) +
+    geom_line(aes(x = year, y = density)) +
+    theme_minimal() +
+    labs(title = "Site-Specific Kelp Density",
+         x = "Year",
+         y = "Density (coverage per sq. meter)")
   plot
 })
 
@@ -724,10 +764,11 @@ output$statictotals <- renderPlotly({
   plot <- ggplot(data = total_reactive()) +
     geom_line(aes(x = year, y = total_count, color = common_name)) +
     theme_minimal() +
-    labs(title = "Aggretgate Counts Over All Sites",
+    theme(legend.position = "bottom") +
+    labs(title = "Aggregate Counts Over All Sites",
          x = "Year",
-         y = "Count") +
-    theme(legend.position = "bottom") 
+         y = "Count",
+         color = "Species")
   plot
 })
 
@@ -742,7 +783,11 @@ output$kelp <- renderPlotly({
   plot
 })
 
-output$biotable <- renderDT({datatable(total_bio_subset)})
+output$biotable <- renderDT({datatable(total_bio_subset,
+                                       colnames = c("Species",
+                                                    "Year",
+                                                    "Total Counts"))
+                                       })
 }
 
 # END ALL SERVER 
