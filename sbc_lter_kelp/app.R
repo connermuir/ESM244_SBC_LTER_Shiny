@@ -324,7 +324,7 @@ ui <- fluidPage(
                           This app seeks to visualize the key factors influencing kelp forest health in Santa Barbara."),
                     br(),
                     br(),
-                    strong("App Architects: Conner Smith and Sachico Lamen"),
+                    strong("App Architects: Conner Smith and Sachiko Lamen"),
                     br(),
                     br(),
                     strong("Acklowledgments:"),
