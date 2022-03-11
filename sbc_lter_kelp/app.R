@@ -650,6 +650,7 @@ tabPanel("Kelp Forest Community", # Start panel 4
                         value = 2021,
                         step = 1,
                         sep = ""
+                      
             ) # end slider input
           ), # end conditional pick_year
           
