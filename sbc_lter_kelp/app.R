@@ -318,7 +318,7 @@ ui <- fluidPage(
           mainPanel(
           fluidRow( # first row for top section
           column(10, 
-                   strong("Kelp forests throughout California are facing multiple threats due to cliamte change. 
+                   strong("Kelp forests throughout California are facing multiple threats due to climate change. 
                           Increasing ocean temperatures, extreme marine heat waves, loss of predators and subsequent overgrazing by purple urchins
                           put kelp forests at risk and imperill the multitude of species that depend on them. 
                           This app seeks to visualize the key factors influencing kelp forest health in Santa Barbara."),
@@ -356,9 +356,9 @@ ui <- fluidPage(
             condition = "input.tabs == 'Kelp Canopy'",
               
               h3("Kelp Canopy:"), 
-              "This is a spatial visualization of quarterly kelp biomass estimates since 1984. Data is collected based on satellite imaging estimating giant kelp canopy biomass. 
+              "This data set provides a spatial assesment of quarterly kelp biomass since 1984. Data is collected based on satellite imaging estimating giant kelp canopy biomass. 
               Biomass data (wet weight, kg) are given for individual 30 x 30 meter pixels in the coastal areas extending from near Ano Nuevo, CA through the southern range limit in Baja California (including offshore islands), representing the range where giant kelp is the dominant canopy forming species.
-              This tab offers partial views of kelp canopy for select years on Santa Rosa island as well as the coastal mainland of Santa Barbara.",
+              This tab offers partial views of kelp canopy for select years on Santa Rosa island as well as along the coastal mainland of Santa Barbara.",
               br(),
               br(),
               strong("Data Citation:"),
@@ -381,8 +381,8 @@ ui <- fluidPage(
             
               h3("Abiotic Factors:"), 
               "This combines several SBC LTER datasets to visualize kelp density in terms of plants per meter quared based on diver surveys. 
-              Data is included across the 11 LTER reef sites, which also incldues water temperature measures.
-              It also uses a landsat data set that ended in 2019 which tracked average nitrate concentrations across the region at a higher resolution spatial scale.",
+              Data is collected across the 11 LTER reef sites, which also incldues water temperature measures.
+              This tab also uses a landsat data set that ended in 2019 which tracked average nitrate concentrations across the region.",
               br(),
               br(),
               strong("Data Citations:"),
@@ -421,7 +421,7 @@ ui <- fluidPage(
             condition = "input.tabs == 'Kelp Forest Community'",
               h3("Kelp Forest Community:"), 
               "This tab combines several additional SBC LTER datasets to visualize abundance of species dependent on kelp across the region and at specific reef sites compared to overall kelp forest health. 
-              There are more than 200 species tracked actively by the LTER. Species of significance for kelp forests include purple sea urchins (a consumer of kelp), sheephead (an urchin predator), sunflower sea stars (an urchin predator), and spiny lobsters (an urchin predator).",
+              There are throusands of species of invertebrates and vertebrates tracked actively by the LTER. Species of significance for kelp forests include purple sea urchins (a consumer of kelp), sheephead (an urchin predator), sunflower sea stars (an urchin predator), and spiny lobsters (an urchin predator).",
               br(),
               br(),
               strong("Data Citations:"),
