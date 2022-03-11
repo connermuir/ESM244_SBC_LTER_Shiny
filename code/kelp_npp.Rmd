@@ -26,16 +26,23 @@ kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
 #This is the more intricate data at the reef level based on diver surveys instead of the landsat images. 
 kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
 
-#Temperatur is also available at the site level. 
+#Temperatur is also available at the site level. We are readinf this directly from the web, which alter versiouns of this app could be adjusted to do.
+
 temp_big <- fread('https://pasta.lternet.edu/package/data/eml/knb-lter-sbc/13/26/d707a45a2cd6eee1d016d99844d537da')
 
-# tempo should be compared to this other kelp abundance doc:
+# temp should be compared to this file, not the regional file:
 kelp_density <- read_csv(here('data', 'Annual_All_Species_Biomass_at_transect_20210108.csv'))
 
 # This worked: Note: fread was much faster then read_csv
 
 ```
+
+
 ```{r}
+# Wrangling the data here for later transport into the shiny app 
+
+# This is abundance based on the number of fronds, this was not ultimately used in this version of the app. 
+
 kelp_abund_sub <- kelp_abund %>%
   clean_names() %>% 
   mutate(site = case_when(site == 'CARP' ~ 'Carpinteria',
@@ -61,13 +68,13 @@ kelp_abund_summary <- kelp_abund_sub %>%
   arrange(-avg_fronds)
   
   
-  
 ```
 
 # Kelp density metrics 
 
 ```{r}
-# This is a standalone data for fronds at the reef level  
+# This is a standalone data for density (number of individuals) at the reef level  
+# This mirrors code provided by MSI staff 
 
 kelp_density_sub <- kelp_density %>%
   clean_names() %>% 
@@ -133,8 +140,10 @@ write.csv(temp_day_sub, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC
 # Now lets just  work with the subset 
 temp_day_sub <- read_csv(here("data", "daily_avg_temp.csv"))
 
+# Coefficient for exploratory plot where temperature was overlayed on top of kelp density
 temp_coeff <- 3
-#For a combined graph if we need one 
+
+# For a combined graph if we need one, this was not ultimately used 
 
 temp_plot <- 
   ggplot(data = temp_day_sub, aes(x = date, y = day_avg_temp)) +
@@ -148,6 +157,7 @@ density_plot <-
   labs(y = "Average Density (Coverage Per Square Meter)")
 density_plot
   
+# This was an exploratory plot that was not ultimately used in the app 
 
 combined_plot <- 
 ggplot() +
@@ -171,20 +181,23 @@ ggplot() +
 ```{r}
 # This takes data collected across CA and filters down fro SB site range 
 # The range DOES NOT include islands sites 
+# Wave data was not considered. 
 
 kelp_factors_sub <- kelp_factors %>% 
   filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id, year)
+  group_by(site_id, year) %>% 
+  summarize(avg_annual_biomass = mean(kelp, na.rm=T),
+            avg_annual_no3 = mean(no3, na.rm=T))
 
 kelp_biomass_plot <- ggplot(data = kelp_factors_sub, 
-                       aes(x = year, y = kelp)) +
+                       aes(x = year, y = avg_annual_biomass)) +
   geom_col(fill = "darkseagreen") +
   theme_minimal() +
   labs(title = "\nKelp Biomass Over Time\n", 
        x = "Year", y = "\nKelp Biomass (kg)\n")
 
 no3_plot <- ggplot(data = kelp_factors_sub, 
-                       aes(x = year, y = no3)) +
+                       aes(x = year, y = avg_annual_no3)) +
   geom_smooth(color = "coral") +
   theme_minimal() +
   labs(title = "\nNitrate Concentration Over Time\n", 
@@ -198,14 +211,14 @@ nitrate_kelp
 
 #First we need to estimate a scaling coefficient between the numbers, kelp biomass numbers generally 4 orders of magnitude larger (e.g. 10^7)
 
-coeff <- 10^7
+coeff <- 10^6
 #This is the best scaling factor after trying a few 
 
 combined_no3 <- ggplot(data = kelp_factors_sub, 
-                       aes(x = year, y = no3)) +
+                       aes(x = year, y = avg_annual_no3)) +
   # now integrate the nitrogen curve with the kelp
   geom_smooth(color = "coral") + #now we need to scale the kelp axis  
-  geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+  geom_col(aes(y = avg_annual_kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
   scale_y_continuous(
     # Features of the first axis
     name = "NO3 Concentration (uM/L)",
@@ -214,11 +227,12 @@ combined_no3 <- ggplot(data = kelp_factors_sub,
   ) +
   theme_bw()
 
+# This is the graph that was used in the app. 
 
 # Table summary of nitrogen and temp
 n_summary <- kelp_factors_sub %>% 
   group_by(year) %>% 
-  summarize(no3 = mean(no3, na.rm = T))
+  summarize(no3 = mean(avg_annual_no3, na.rm = T))
 
 t_summary <- temp_day_sub %>% 
   mutate(year = year(date)) %>% 
@@ -230,7 +244,7 @@ n_t_join <-
 ```
 
 ```{r}
-# Creating anothe rgraph for wave height 
+# Creating another graph for wave height, this was not used in the app.
 
 combined_waves <- ggplot(data = kelp_factors_sub, 
                        aes(x = year, y = waves)) +
