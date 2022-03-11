@@ -198,11 +198,13 @@ kelp_density_year <- kelp_density_summary %>%
 # Table summary of nitrogen and temp
 kelp_factors_sub <- kelp_factors %>% 
   filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id, year)
+  group_by(site_id, year) %>% 
+  summarize(avg_annual_biomass = mean(kelp, na.rm=T),
+            avg_annual_no3 = mean(no3, na.rm=T))
 
 n_summary <- kelp_factors_sub %>% 
   group_by(year) %>% 
-  summarize(no3 = mean(no3, na.rm = T))
+  summarize(year_avg_no3 = mean(avg_annual_no3, na.rm = T))
 
 t_summary <- temp_day_sub %>% 
   mutate(year = year(date)) %>% 
@@ -213,20 +215,13 @@ n_t_join <-
   inner_join(n_summary, t_summary, by = "year") %>% 
   mutate(year = as.character(year)) %>% 
   rename("Year" = year,
-         "Average Nitrate (ug/M)" = no3,
+         "Average Nitrate (ug/M)" = year_avg_no3,
          "Average Yearly Temp (C)" = year_avg_temp)
 
-#site lsit for reactive input 
+#site list for reactive input 
 
 site_list <- unique(kelp_density_sub$site)
 
-kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
-sites <- read_csv(here('data', 'site_locations.csv'))
-combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")  
-
-combined_kelp_sb <- combined_kelp %>% 
-  filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id)
 
 #########
 # ALL COMMUNITY DATA GOES HERE 
@@ -699,7 +694,7 @@ output$coast_plot <- renderPlot({
 ################  
 # ABIOTIC FACTORS OUTPUTS ALL GO HERE  
 
-coeff <- 10^7
+coeff <- 10^6
 #This is the best scaling factor for the nitrate and wave graph after trying a few 
  
 
@@ -761,18 +756,18 @@ output$whichplot <- renderPlot({
   
    if(input$plotnumber == "Nitrate Concentration (Regional)"){
     plot = ggplot(data = factors_reactive(), 
-           aes(x = year, y = no3)) +
+           aes(x = year, y = avg_annual_no3)) +
       # now integrate the nitrogen curve with the kelp
       geom_smooth(color = "coral") + #now we need to scale the kelp axis  
-      geom_col(aes(y = kelp/coeff), fill = "darkseagreen", alpha = 0.7) +
+      geom_col(aes(y = avg_annual_biomass/coeff), fill = "darkseagreen", alpha = 0.7) +
       scale_y_continuous(
         # Features of the first axis
         name = "NO3 Concentration (uM/L)",
         # Add a second axis and specify its features
         sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
       ) +
-      labs(title = "Regional Nitrate Levels and Kelp Biomass Estimates from Landsat Images",
-           caption = "*Red trend line indicates nitrate coincentrations and green bars are kelp biomass totals.") +
+      labs(title = "Annual Average Nitrate and Kelp Biomass Estimates Regionally",
+           caption = "*Red trend line indicates nitrate coincentrations (in micromoles per liter). Green bars are kelp biomass totals (in kg) estimated from landsat images.") +
       theme(plot.caption = element_text(hjust = 0, face = "bold.italic")) +
       theme_minimal()
   }
