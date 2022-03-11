@@ -497,9 +497,9 @@ ui <- fluidPage(
                     h3("Key Takeaways:"),
                     br(),
                     tags$ul(
-                      tags$li("Santa Rosa Island kelp biomass, estimated based on landsat imagery over a span of years shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
+                      tags$li("Santa Rosa Island kelp biomass, estimated based on landsat imagery over a span of years, shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
                       tags$li("Biomass during the last decade reached an overall low point point sometime around 2015, coinciding with a particularly prolonged marine heat wave."), 
-                      tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp fover this time seems to have been more spatially concentrated compared to the kelp range seen in 2015.")),
+                      tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp over this time seems to have been more spatially concentrated compared to the kelp range seen in 2015.")),
                   br(),
                   br(),
                   em("*Kelp biomass is estimated from remotely sensed data from satellite imagery and empirical relationships.\nThis is a particularly large data set so subsets were made to facilitate app function."),
@@ -594,7 +594,7 @@ ui <- fluidPage(
                                 tags$ul(
                                   tags$li("Kelp density, measured as percent cover per meter squared from diver surveys, varied widely across the 11 LTER reef sites."), 
                                   tags$li("Temperature spikes from the 2013-2015 marine heat wave corresponded with declines in kelp density in some locations."), 
-                                  tags$li("Sites on the chanel islands had the lowest average density compared to mainland sites. This aligns with the patterns of loss seen since 2010 on Santa Rosa island.")),
+                                  tags$li("Sites on the Channel Islands had the lowest average density compared to mainland sites. This aligns with the patterns of loss seen since 2010 on Santa Rosa island.")),
                                 br(),
                                 br(),
                                 em("*Kelp density is caclulated as the numer of individuals per square meter from diver surveys"),
