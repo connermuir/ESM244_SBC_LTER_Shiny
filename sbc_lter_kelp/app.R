@@ -629,19 +629,40 @@ tabPanel("Kelp Forest Community", # Start panel 4
         sidebarLayout(# Adding sidebar selector for factors
         sidebarPanel(
           conditionalPanel( # start conditional for pick_species 
-            condition = "input.pick_plot == 'Year and Species'",  
+            condition = "input.pick_plot == 'Year and Species'",
+            h3("Explore Species by Year:"),
+            "Investigate differences in species abundance between sites for specific years by manipulating the selections below.",
+            br(),
+            br(),
+            "Choose Species: \n (to remove species selection, click and press 'delete')",
             selectInput(inputId = "pick_species",
-                        label = "Choose Species: \n (to remove species selection, click and press 'delete')",
+                        label = NULL,
                         choices = unique(biodiversity$common_name),
                         selected = "Aggregating anemone",
                         multiple = TRUE
                         ) # end pick_species
           ), # end conditional for pick_species
           
+          conditionalPanel( # start conditional for pick_year
+            condition = "input.pick_plot == 'Year and Species'",
+            sliderInput("biodiversity_year_selector", "Select Year:",
+                        min = min(biodiversity$year),
+                        max = max(biodiversity$year),
+                        value = 2021,
+                        step = 1,
+                        sep = ""
+            ) # end slider input
+          ), # end conditional pick_year
+          
           conditionalPanel( # start conditional for pick_location
             condition = "input.pick_plot == 'Location and Species'",
+            h3("Explore Timeseries Data by Location:"),
+            "Get a yearly comparison of species abundance over all sites by manipulating the selections below.",
+            br(),
+            br(),
+            "Choose Site:",
             selectInput(inputId = "pick_location", 
-                        label = "Choose Site:",
+                        label = NULL,
                         choices = unique(biodiversity$site),
                         selected = "Naples",
                         multiple = FALSE
@@ -660,6 +681,7 @@ tabPanel("Kelp Forest Community", # Start panel 4
           
           conditionalPanel( # start conditional for pick_species3
             condition = "input.pick_plot == 'Species Specific Timeseries'",
+            h3("Species Graph"), 
             selectInput(inputId = "pick_species3",
                         label = "Choose Species: (to remove species selection, click and press 'delete')",
                         choices = unique(total_bio_subset$common_name),
@@ -670,6 +692,8 @@ tabPanel("Kelp Forest Community", # Start panel 4
           
           conditionalPanel( # Conditional table for biodiversity table
             condition = "input.pick_plot == 'Species Specific Timeseries'", 
+            h3("Searchable Data"), 
+            "Enter the name of a species to see a table of the total annual counts over all monitoring sites:",
             DTOutput(outputId = 'biotable')
           ), # end other conditional
           
@@ -683,19 +707,9 @@ tabPanel("Kelp Forest Community", # Start panel 4
                          
                          conditionalPanel( # Conditional panel for year and species plot
                            condition = "input.pick_plot == 'Year and Species'", 
-                           plotlyOutput('biodiversityplot') 
+                           plotlyOutput('biodiversityplot'),
+                           DTOutput(outputId = "year_spp")
                          ), # end conditional plot
-                         
-                        conditionalPanel( # start conditional for pick_year
-                          condition = "input.pick_plot == 'Year and Species'",
-                          sliderInput("biodiversity_year_selector", "Select Year:",
-                                     min = min(biodiversity$year),
-                                     max = max(biodiversity$year),
-                                     value = 2021,
-                                     step = 1,
-                                     sep = ""
-                                     ) # end slider input
-                       ), # end conditional pick_year
                        
                        conditionalPanel( # conditional panel for location and species plot
                          condition = "input.pick_plot == 'Location and Species'",
@@ -962,7 +976,10 @@ output$kelp <- renderPlotly({
     geom_line(aes(x = year, y = density_total), color = 'darkgreen', size = .3) +
     theme(legend.title = element_blank()) +
     theme(legend.position = "bottom") +
-    labs(x = "Year", y = "Density (coverage per sq. meter)", fill = "Site") +
+    labs(title = "Aggregate Kelp Density Over All Sites",
+         x = "Year",
+         y = "Density (coverage per sq. meter)",
+         fill = "Site") +
     theme_minimal() 
   plot
 })
@@ -972,6 +989,13 @@ output$biotable <- renderDT({datatable(total_bio_subset,
                                                     "Year",
                                                     "Total Counts"))
                                        })
+
+output$year_spp <- renderDT({datatable(bio_reactive(),
+                                       colnames = c("Year",
+                                                    "Site",
+                                                    "Species",
+                                                    "Total Count"))
+  })
 }
 
 # END ALL SERVER 
