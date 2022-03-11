@@ -11,6 +11,7 @@ library(paletteer)
 library(tidyverse)
 library(lubridate)
 library(DT)
+library(scales)
 
 ########
 ## DATA 
@@ -215,7 +216,7 @@ n_t_join <-
   inner_join(n_summary, t_summary, by = "year") %>% 
   mutate(year = as.character(year)) %>% 
   rename("Year" = year,
-         "Average Nitrate (ug/M)" = year_avg_no3,
+         "Average Nitrate (uM/L)" = year_avg_no3,
          "Average Yearly Temp (C)" = year_avg_temp)
 
 #site list for reactive input 
@@ -315,30 +316,80 @@ ui <- fluidPage(
 
         tabPanel("Project Overview", # Setting project description page
           mainPanel(
-          fluidRow(
-            column(10,
-              strong("This app seeks to visualize the key factors influencing kelp forest health in Santa Barbara. It includes the following tabs:"),
-              br(),
-              br(),
+          fluidRow( # first row for top section
+          column(10, 
+                   strong("Kelp forests throughout California are facing multiple threats due to cliamte change. 
+                          Increasing ocean temperatures, extreme marine heat waves, loss of predators and subsequent overgrazing by purple urchins
+                          put kelp forests at risk and imperill the multitude of species that depend on them. 
+                          This app seeks to visualize the key factors influencing kelp forest health in Santa Barbara."),
+                    br(),
+                    br(),
+                    strong("App Architects: Conner Smith and Sachico Lamen"),
+                    br(),
+                    br(),
+                    strong("Acklowledgments:"),
+                    br(),
+                    em("All data included in this app is collected and managed by the Santa Barbara Coastal Long Term Ecological Research station (LTER)."),
+                    br(),
+                    br(),
+                    em("Special thanks to Dr. Li Kui from the LTER office who provided essential guidance to this project."),
+                    br()),
+                    
+          br(),
+          column(2,
+          img(src = 'kelp_forest.jpg', height =300, width = 350),
+          tags$a(href="https://www.kqed.org/science/1973217/in-central-california-sea-otters-feast-on-purple-urchins-and-thats-good-for-kelp", 
+                 "Source:_KQED")), # end image column
+          ),
+          
+          fluidRow( # section fluid row for the rest of the buttons
+          br(),
+          br(),
+          radioButtons("tabs", label = h3("Explore Tab Data"),
+                       choices = list("Kelp Canopy", "Abiotic Factors", "Kelp Forest Community"), 
+                       selected = "Kelp Canopy")), # end fluid row for buttons
+          
+          # Run all remaining in this tab through conditional panels based on the radio choice
+          fluidRow( 
+          column(10, 
+          conditionalPanel( #Start conditional text for kelp canopy 
+            condition = "input.tabs == 'Kelp Canopy'",
+              
               h3("Kelp Canopy:"), 
-              "This is a visualization of quarterly kelp biomass estimates since 1984. Data is collected based on satellite imaging estimating giant kelp canopy biomass. Biomass data (wet weight, kg) are given for individual 30 x 30 meter pixels in the coastal areas extending from near Ano Nuevo, CA through the southern range limit in Baja California (including offshore islands), representing the range where giant kelp is the dominant canopy forming species.",
+              "This is a spatial visualization of quarterly kelp biomass estimates since 1984. Data is collected based on satellite imaging estimating giant kelp canopy biomass. 
+              Biomass data (wet weight, kg) are given for individual 30 x 30 meter pixels in the coastal areas extending from near Ano Nuevo, CA through the southern range limit in Baja California (including offshore islands), representing the range where giant kelp is the dominant canopy forming species.
+              This tab offers partial views of kelp canopy for select years on Santa Rosa island as well as the coastal mainland of Santa Barbara.",
               br(),
               br(),
               strong("Data Citation:"),
               em("Bell, T, K. Cavanaugh, D. Siegel. 2022. SBC LTER: Time series of quarterly NetCDF files of kelp biomass in the canopy from Landsat 5, 7 and 8, since 1984 (ongoing) ver 15. Environmental Data Initiative."),
               tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.74", 
-                     "Link"),
-              br(),
-              br(),
+                     "Link"))),
+          column(2,
+          conditionalPanel( #Start conditional picture for kelp canopy 
+            condition = "input.tabs == 'Kelp Canopy'",
+            br(),
+            br(),
+            img(src = 'canopy.jpg', height =250, width = 350),
+            tags$a(href="https://www.news.ucsb.edu/2017/017614/getting-little-help-their-friends", 
+                   "Source:_UCSB")),
+           ), # end all for kelp canopy
+          
+          column(10, 
+          conditionalPanel( #Start conditional text for abiotic factors  
+            condition = "input.tabs == 'Abiotic Factors'",
+            
               h3("Abiotic Factors:"), 
-              "This combines several SBC LTER datasets to visualize kelp abundance across the region and at specific sites compared to abiotic factors influencing productivity. Selected factors include temperature, nitrate concentrations, and wave height.",
+              "This combines several SBC LTER datasets to visualize kelp density in terms of plants per meter quared based on diver surveys. 
+              Data is included across the 11 LTER reef sites, which also incldues water temperature measures.
+              It also uses a landsat data set that ended in 2019 which tracked average nitrate concentrations across the region at a higher resolution spatial scale.",
               br(),
               br(),
               strong("Data Citations:"),
               br(),
-              strong("Kelp Anundance at LTER Sites:"),
-              em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Abundance and size of Giant Kelp (Macrocystis Pyrifera), ongoing since 2000 ver 25. Environmental Data Initiative."),
-              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.18", 
+              strong("Kelp Density at LTER Sites:"),
+              em("Reed, D, R. Miller. 2021. SBC LTER: Reef: Annual time series of biomass for kelp forest species, ongoing since 2000 ver 10. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.50", 
                                      "Link"),
               br(),
               br(),
@@ -351,14 +402,35 @@ ui <- fluidPage(
               strong("Abiotic Factors Regionally:"),
               em("Bell, T, K. Cavanaugh, D. Reuman, M. Castorani, L. Sheppard, J. Walter. 2021. SBC LTER: REEF: Macrocystis pyrifera biomass and environmental drivers in southern and central California ver 1. Environmental Data Initiative."),
               tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.144", 
-                                     "Link"),
-              br(),
-              br(),
+                                     "Link"))
+            ),# end text column 
+          
+          column(2,
+                 conditionalPanel( #Start conditional picture for abiotic factors  
+                   condition = "input.tabs == 'Abiotic Factors'",
+                   br(),
+                   br(),
+                   img(src = 'kelp_monitor.jpg', height =250, width = 350),
+                   tags$a(href="https://caseagrant.ucsd.edu/news/mpa-update-monitoring-californias-iconic-kelp-forests", 
+                          "Source:_Sea_Grant")),
+          ), # end all for kelp canopy
+            
+          #Start biodiversity columns 
+          column(10,
+          conditionalPanel( #Start conditional text for kelp forest community 
+            condition = "input.tabs == 'Kelp Forest Community'",
               h3("Kelp Forest Community:"), 
-              "This combines several additional SBC LTER datasets to visualize abundance of species dependent on kelp across the region and at specific sites compared to overall kelp forest health. Selected species include .... PANEL 3 TBD.",
+              "This tab combines several additional SBC LTER datasets to visualize abundance of species dependent on kelp across the region and at specific reef sites compared to overall kelp forest health. 
+              There are more than 200 species tracked actively by the LTER. Species of significance for kelp forests include purple sea urchins (a consumer of kelp), sheephead (an urchin predator), sunflower sea stars (an urchin predator), and spiny lobsters (an urchin predator).",
               br(),
               br(),
               strong("Data Citations:"),
+              br(),
+              strong("All Species Abundance at LTER Sites:"),
+              em("Reed, D, R. Miller. 2021. SBC LTER: Reef: Annual time series of biomass for kelp forest species, ongoing since 2000 ver 10. Environmental Data Initiative."),
+              tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.50", 
+                   "Link"),
+              br(),
               br(),
               strong("Fish Abundance at LTER Sites:"),
               em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Fish abundance ver 36. Environmental Data Initiative."),
@@ -369,13 +441,23 @@ ui <- fluidPage(
               strong("Invertebrate Abundance at LTER Sties:"),
               em("Reed, D, R. Miller. 2022. SBC LTER: Reef: Kelp Forest Community Dynamics: Invertebrate and algal density ver 28. Environmental Data Initiative."),
               tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.19", 
-                                     "Link")
-                      ), #start picture column (SHOULD ADD MORE)
-            column(2,
-              img(src = 'garbaldi.jpg', height =200, width = 300))
-                       ) # end fluidRow 1
-                       )# end main panel 1
-                       ), # END TAB PANEL 1
+                                     "Link")) # end conditional kelp forest community text
+          ),
+          column(2,
+                 conditionalPanel( #Start conditional picture for kelp canopy 
+                   condition = "input.tabs == 'Kelp Forest Community'",
+                   br(),
+                   br(),
+                   img(src = 'garbaldi.jpg', height =250, width = 350),
+                   br(),
+                   tags$a(href="https://sbclter.msi.ucsb.edu/", 
+                          "Source:_SB_LTER")),
+          ), # end all for kelp canopy# end text column
+          
+            
+           ) # end fluidRow 1
+           )# end main panel 1
+           ), # END TAB PANEL 1
 
 ###########
 # START MAPPING PANEL     
@@ -417,7 +499,13 @@ ui <- fluidPage(
                     tags$ul(
                       tags$li("Santa Rosa Island kelp biomass, estimated based on landsat imagery over a span of years shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
                       tags$li("Biomass during the last decade reached an overall low point point sometime around 2015, coinciding with a particularly prolonged marine heat wave."), 
-                      tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp fover this time seems to have been more spatially concentrated compared to the kelp range seen in 2015."))
+                      tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp fover this time seems to have been more spatially concentrated compared to the kelp range seen in 2015.")),
+                  br(),
+                  br(),
+                  em("*Kelp biomass is estimated from remotely sensed data from satellite imagery and empirical relationships.\nThis is a particularly large data set so subsets were made to facilitate app function."),
+                  br(),
+                  tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.74", 
+                     "See the full metadata")
                   ), # end conditional panel for SR maps
               
               conditionalPanel( #Start conditional main panel  for SB maps
@@ -428,9 +516,15 @@ ui <- fluidPage(
                 h3("Key Takeaways:"),
                 br(),
                 tags$ul(
-                  tags$li("Santa Rosa Island kelp biomass, estimated based on landsat imagery over a span of years shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
-                  tags$li("Biomass during the last decade reached an overall low point point sometime around 2015, coinciding with a particularly prolonged marine heat wave."), 
-                  tags$li("Despite higher overall biomass in 2020 comapred to 2015, recovery of kelp fover this time seems to have been more spatially concentrated compared to the kelp range seen in 2015."))
+                  tags$li("Santa Barbara coastal kelp biomass in this geographic range shows considerable fluctuations when looking at three annual cross sections: 2010, 2015, and 2020."), 
+                  tags$li("Biomass during the last decade reached an overall low point point between 2010 and 2015, coinciding with a particularly prolonged marine heat wave."), 
+                  tags$li("Kelp recovery on the mainland through 2020 appears to be more robust compared to recovery rates on Santa Rosa island. However, the average biomass of the kelp canopy across all spatial points on Santa Rosa was higher overall.")),
+                br(),
+                br(),
+                em("*Kelp biomass is estimated from remotely sensed data from satellite imagery and empirical relationships.\nThis is a particularly large data set so subsets were made to facilitate app function."),
+                br(),
+                tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.74", 
+                       "See the full metadata")
               ) # end SB coast maps 
               )
         # end main panel maps
@@ -501,6 +595,12 @@ ui <- fluidPage(
                                   tags$li("Kelp density, measured as percent cover per meter squared from diver surveys, varied widely across the 11 LTER reef sites."), 
                                   tags$li("Temperature spikes from the 2013-2015 marine heat wave corresponded with declines in kelp density in some locations."), 
                                   tags$li("Sites on the chanel islands had the lowest average density compared to mainland sites. This aligns with the patterns of loss seen since 2010 on Santa Rosa island.")),
+                                br(),
+                                br(),
+                                em("*Kelp density is caclulated as the numer of individuals per square meter from diver surveys"),
+                                br(),
+                                tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.50", 
+                                       "See the full metadata")
                               ), #end conditional text for abundance
                               
                               #conditional text for nitrate option
@@ -509,13 +609,20 @@ ui <- fluidPage(
                                 h3("Key Takeaways:"),
                                 br(),
                                 tags$ul(
-                                  tags$li("Low levels of available nitrate at the regional level corresponsed to heat wave events."), 
+                                  tags$li("Low levels of available nitrate (measured in micro moles per liter) at the regional level corresponsed to heat wave events."), 
                                   tags$li("Temperature spikes typically reduce available nitrate, which lowers kelp productivity and resistance to other stressors.")),
+                                br(),
+                                br(),
+                                em("*Kelp biomass is estimated from remotely sensed data from satellite imagery and empirical relationships.\nThis dataset ended in 2019."),
+                                br(),
+                                tags$a(href="https://sbclter.msi.ucsb.edu/data/catalog/package/?package=knb-lter-sbc.144", 
+                                       "See the full metadata")
                               ) #end conditional text for nitrate
                       ) # end main panel 3
                       ) # End sidebar layout
                       ), # END ABIOTIC FACTORS PANEL 
 
+########
 ##### START COMMUNITY TAB
             
 tabPanel("Kelp Forest Community", # Start panel 4
@@ -634,7 +741,8 @@ output$santa_rosa_table <- renderTable(santa_rosa_kelp_table)
 output$santa_rosa_plot <- renderPlot({
   ggplot(data = santa_rosa_kelp_all_years, aes(x = year, y = biomass)) +
     geom_smooth(color = "darkseagreen") +
-    labs(title = "Santa Rosa Kelp Trend (1984-2021)", y = "Biomass (kg)", x = "Year") +
+    labs(title = "Santa Rosa Kelp (1984-2021)", y = "Biomass (kg)", x = "Year") +
+    theme(axis.text = element_text(size = 8)) +
     theme_minimal()
 })
 
@@ -647,7 +755,8 @@ output$coast_table <- renderTable(sb_kelp_table)
 output$coast_plot <- renderPlot({
   ggplot(data = sb_kelp_all_years, aes(x = year, y = biomass)) +
     geom_smooth(color = "darkseagreen") +
-    labs(title = "Santa Barbara Kelp Trend (1984-2021)", y = "Biomass (kg)", x = "Year") +
+    labs(title = "Coastal Kelp (1984-2021)", y = "Biomass (kg)", x = "Year") +
+    theme(axis.text = element_text(size = 8)) +
     theme_minimal()
 })
  
@@ -655,18 +764,15 @@ output$coast_plot <- renderPlot({
   output$whichmap_sr <- renderTmap({
     if(input$mapyear_sr == "2010"){
       map_sr = tm_shape(santa_rosa_kelp_2010_sf) +
-        tm_legend(title = "Santa Rosa Kelp Biomass in 2010 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')} # end 2010 option
+        tm_dots('biomass', title = "Biomass (kg)", palette = 'BuGn')} # end 2010 option
     
     if(input$mapyear_sr == "2015"){
      map_sr = tm_shape(santa_rosa_kelp_2015_sf) +
-        tm_legend(title = "Santa Rosa Kelp Biomass in 2015 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')} # end 2015 option 
+        tm_dots('biomass', title = "Biomass (kg)", palette = 'BuGn')} # end 2015 option 
     
     if(input$mapyear_sr == "2020"){
       map_sr = tm_shape(santa_rosa_kelp_2020_sf) +
-        tm_legend(title = "Santa Rosa Kelp Biomass in 2020 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')
+        tm_dots('biomass', title = "Biomass (kg)", palette = 'BuGn')
       } # end 2020 option
     map_sr # call the option 
   }) # end this function for selecting year maps 
@@ -676,18 +782,16 @@ output$coast_plot <- renderPlot({
   output$whichmap_sb <- renderTmap({
     if(input$mapyear_sb == "2010"){
       map_sb = tm_shape(sb_kelp_2010_sf) +
-        tm_legend(title = "Santa Barbara Kelp Biomass in 2010 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')} # end 2010 option
+        tm_dots('biomass', title = "Biomass (kg)", palette = 'BuGn')} # end 2010 option
     
     if(input$mapyear_sb == "2015"){
       map_sb = tm_shape(sb_kelp_2015_sf) +
         tm_legend(title = "Santa Barbara Kelp Biomass in 2015 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')} # end 2015 option 
+        tm_dots('biomass', title = "Biomass (kg)", palette = 'BuGn')} # end 2015 option 
     
     if(input$mapyear_sb == "2020"){
       map_sb = tm_shape(sb_kelp_2020_sf) +
-        tm_legend(title = "Santa Barbara Kelp Biomass in 2020 (kg)") +
-        tm_dots('biomass', palette = 'BuGn')
+        tm_dots('biomass', title = "Biomass (kg)", palette = 'BuGn')
     } # end 2020 option
     map_sb # call the option 
   }) # end this function for selecting year maps 
@@ -725,8 +829,9 @@ coeff <- 10^6
 output$temp_plot <- renderPlot({
     plot = ggplot(data = temp_day_sub, aes(x = date, y = day_avg_temp)) +
       geom_smooth(color = "coral") +
-      labs(y = "Average Temperature (Degrees Celsius)", title = "Average Temperature Across All Sites") +
+      labs(y = "\nAverage Temperature (Degrees Celsius)\n", title = "Average Temperature Across All Sites") +
       theme_minimal() +
+      theme(axis.text = element_text(size = 8)) +
       theme(axis.title.x = element_blank())
     plot
   })
@@ -751,7 +856,8 @@ output$whichplot <- renderPlot({
       theme_minimal() +
       theme(legend.position = "top") +
       theme(axis.title.x = element_blank()) +
-      labs(y = "Average Density (Plants Per Square Meter)",
+      theme(axis.text = element_text(size = 8)) +
+      labs(y = "\nAverage Density (Plants Per Square Meter)\n",
            fill = 'Site')}
   
    if(input$plotnumber == "Nitrate Concentration (Regional)"){
@@ -762,14 +868,14 @@ output$whichplot <- renderPlot({
       geom_col(aes(y = avg_annual_biomass/coeff), fill = "darkseagreen", alpha = 0.7) +
       scale_y_continuous(
         # Features of the first axis
-        name = "NO3 Concentration (uM/L)",
+        name = "\nNO3 Concentration (uM/L)\n",
         # Add a second axis and specify its features
-        sec.axis = sec_axis(~.*coeff, name=" Kelp Biomass (kg)")
-      ) +
+        sec.axis = sec_axis(~.*coeff, name="\nKelp Biomass (kg)\n", labels = comma)) +
       labs(title = "Annual Average Nitrate and Kelp Biomass Estimates Regionally",
-           caption = "*Red trend line indicates nitrate coincentrations (in micromoles per liter). Green bars are kelp biomass totals (in kg) estimated from landsat images.") +
+           caption = "*Red trend line indicates nitrate coincentrations (in micromoles per liter).\n Green bars are kelp biomass totals (in kg) estimated from landsat images.") +
       theme(plot.caption = element_text(hjust = 0, face = "bold.italic")) +
-      theme_minimal()
+      xlab(element_blank()) +
+      theme_minimal(base_size = 16)
   }
   plot # end second option (nitrate)
   }) # end this function for selecting factor graphs 
