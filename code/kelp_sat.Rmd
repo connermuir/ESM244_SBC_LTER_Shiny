@@ -23,7 +23,8 @@ library(tidyverse)
 
 ## This is time series data of kelp canopy using satellite imagery and will be updated regularly. The file is a .ns so we use the 'ncdf4' package. 
 
-## HELP: Need to read this direct off web
+####### IMPORTANT NOTE
+# Other users will have to download this file to their local machines as it is too large to upload to github directly 
 
 nc_kelp_raw <- nc_open(here("data", "LandsatkelpBiomass_2021_v2_withmetadata.nc"))
 
@@ -51,11 +52,10 @@ print(df_li)
 
 write.csv(df_li, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_cruz_kelp_2021.csv', row.names = FALSE)
 
-# Providing a coordinate range for SB region (this may actually just be the islands), still has some NAs, can't drop_na or all observations disappear 
+# This is a test csv not in use by the app currently demonstrating how the subsets can be created. This is just data for the Fourth quarter of 2021 for Santa Rosa island. 
 
-#create a csv for this 
 
-# try to make a sf and fixed map from this 
+# This is an example of how this data can be converted into interactive tmaps 
 
 kelp_sat_sf <- df_li %>% 
   st_as_sf(coords = c('lon', 'lat'))
@@ -71,9 +71,10 @@ tmap_kelp_sat <-
 tmap_kelp_sat
 
 #This works! Kelp values for one quarter/year on santa rosa 
-#geom tile can work with irregular grid 
+# Others could make fixed maps as well and use 'geom_tile' which can work with irregular grids such as this. 
 
-# input$year <- read_csv (here( .... , 2008 csv. ))
+######
+# Here we begin wrangling data that will create the csv files that will be used by the app. 
 
 sr_biomass <- data.frame(lat,lon, biomass=data.frame(biomass)) %>%
   filter(lat>=33.847062&lat<=34.100458&lon>=-120.291726&lon<=-119.924374) %>%
@@ -92,7 +93,7 @@ sr_sites <- data.frame(lat,lon, biomass=data.frame(biomass)) %>%
   dplyr::select(lat,lon) %>% 
   mutate(cell_id = group_indices(., lat, lon))
 
-# Here we have cell ids for all sites in the santa cruz area 
+# Here we have cell ids for all sites in the santa rosa area 
   
 sr_biomass_complete <- 
   inner_join(sr_biomass, time, by = "time_stamp") %>% 
@@ -101,9 +102,9 @@ sr_biomass_complete <-
 
 write.csv(sr_biomass_complete, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_rosa_kelp_all_years.csv', row.names = FALSE)
 
-# This now shows all non zero/NA values for every year at every site. The time stamps have been assigned actual years and we have averged the biomass for the year to remove the quarterly level observations 
+# This now shows all non zero/NA values for every year at every site. The time stamps have been assigned actual years and we have averaged the biomass for the year to remove the quarterly level observations 
 
-# Because this isn't working with tmap, lets write a few example csv files to call in the shiny 
+# Because this isn't working with tmap, lets write a few example csv files to call in the shiny with certain years specified 
 
 sr_biomass_2010 <- sr_biomass_complete %>% 
   filter(year == 2010)
@@ -117,14 +118,15 @@ sr_biomass_2020 <- sr_biomass_complete %>%
   filter(year == 2020)
 write.csv(sr_biomass_2020, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\santa_rosa_kelp_2020.csv', row.names = FALSE)
 
-# Now we have assigned site_id to eah coordinate block for SR island 
+# Now we have assigned site_id to each coordinate block for SR island, these are all of our files we will use in the app demo. 
 ```
 
 
-## New Code Chunk for Coastline Coordinates 
+## New Code Chunk for Coastline Coordinates, Same strategy as above. 
 
 ```{r}
 #coordinates are rough estimates for a coastal box from gaviota to rincon 
+
 coast_biomass <- data.frame(lat,lon, biomass=data.frame(biomass)) %>%
   filter(lat>=34.3712349&lat<=34.4747587&lon>=-120.2267407&lon<=-119.4778351) %>%
   mutate(cell_id = group_indices(., lat, lon)) %>% 
@@ -175,85 +177,15 @@ coast_biomass_2020 <- coast_biomass_complete %>%
   filter(year == 2020)
 write.csv(coast_biomass_2020, 'C:\\Users\\conne\\Documents\\ESM 244\\Shiny\\ESM244_SBC_LTER_Shiny\\data\\coast_biomass_2020.csv', row.names = FALSE)
 
+
+# Done making files for the analysis in the app. 
 ```
 
 ```{r}
-# Try the static map here 
+# Others could try making static maps here, there are some .shp files already included in this repo.
 
-
+#sb_map <- read_sf(here('data', 'coastal_map','3853-s3_2004_s3_coastal_zone.shp'))
 ```
 
 
-
-```{r}
-# Placeholder map data until .ns can be figured out 
-
-# This is the kelp biomass from all sites, will bind the coordinates for the sites after 
-
-kelp_raw_sites <- read_csv(here('data', 'kelp_no3_waves.csv'))
-
-sites <- read_csv(here('data', 'site_locations.csv'))
-
-combined_kelp <- merge(sites, kelp_raw_sites, by = "site_id")
-
-# This worked! We now have a proxy for kelp biomass by site including coordinates. 
-```
-
-```{r}
-# Now we want to map this kelp across the sites using the 'sf' package 
-
-#First filter for jsut the SB coordiantes:
-
-combined_kelp_sb <- combined_kelp %>% 
-  filter(site_id %in% c(267:298)) %>% 
-  group_by(site_id)
-
-kelp_sb_sf <- combined_kelp_sb %>% 
-  st_as_sf(coords = c('lon', 'lat'))
-
-# we need to tell R what the coordinate reference system is 
-
-st_crs(kelp_sb_sf) <- 4326
-
-ggplot(data = kelp_sb_sf) +
-  geom_sf(color = 'darkgreen') +
-  theme_minimal()
-
-# Reading in the coastal polygon shp file for SB from here: http://geodata.library.ucsb.edu/catalog/3853-s3_2002_s3_reg_coastal 
-
-sb_map <- read_sf(here('data', 'coastal_map',
-                       '3853-s3_2004_s3_coastal_zone.shp'))
-
-sb_map_transform <- st_transform(sb_map, 4326)
-
-ggplot(data = sb_map_transform) +
-  geom_sf()
-
-# Kick ass, we have the coastal zone shp file now. Note: this is for the entire county so we may need to filter it somehow or jsut include more kelp sites. 
-
-# Now make a combined plot with all the data:
-
-sb_map_static <- ggplot() +
-  geom_sf(data = sb_map,
-          size = .1,
-          color = 'darkgrey') +
-  geom_sf(data = kelp_sb_sf,
-          size = .5,
-          color = 'red') +
-  theme_void() +
-  labs(title = 'Kelp Cover in Santa Barbara')
-sb_map_static
-
-# Using tmap from the lab
-
-tmap_mode('view') 
-tmap_kelp <- tm_shape(kelp_sb_sf) +
-  tm_dots()
-
-tmap_kelp
-
-# THIS IS A FUNCTIONAL MAP FEATURE!!! 
-
-# NEXT THING TO FIGURE OUT: LOADING NS, CREATING WEIGHTINGS/COLOR BASED ON KELP DENSITY AND INCLUDING TIME SERIES FILTER 
-```
 
