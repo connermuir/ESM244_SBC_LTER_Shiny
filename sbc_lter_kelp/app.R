@@ -21,21 +21,21 @@ library(scales)
 #These are 3 subsets for SR island 
 
 #first 2010
-santa_rosa_kelp_2010 <- read_csv(here("data", "biomass_files", "santa_rosa_kelp_2010.csv"))
+santa_rosa_kelp_2010 <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "santa_rosa_kelp_2010.csv"))
 
 santa_rosa_kelp_2010_sf <- santa_rosa_kelp_2010 %>% 
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(santa_rosa_kelp_2010_sf) <- 4326
 
 # then 2015
-santa_rosa_kelp_2015 <- read_csv(here("data", "biomass_files", "santa_rosa_kelp_2015.csv"))
+santa_rosa_kelp_2015 <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "santa_rosa_kelp_2015.csv"))
 
 santa_rosa_kelp_2015_sf <- santa_rosa_kelp_2015 %>% 
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(santa_rosa_kelp_2015_sf) <- 4326
 
 #then 2020
-santa_rosa_kelp_2020 <- read_csv(here("data", "biomass_files", "santa_rosa_kelp_2020.csv"))
+santa_rosa_kelp_2020 <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "santa_rosa_kelp_2020.csv"))
 
 santa_rosa_kelp_2020_sf <- santa_rosa_kelp_2020 %>% 
   st_as_sf(coords = c('lon', 'lat'))
@@ -45,28 +45,28 @@ st_crs(santa_rosa_kelp_2020_sf) <- 4326
 #These are 3 subsets for SB coast
 
 #first 2010
-sb_kelp_2010 <- read_csv(here("data", "biomass_files", "coast_biomass_2010.csv"))
+sb_kelp_2010 <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "coast_biomass_2010.csv"))
 
 sb_kelp_2010_sf <- sb_kelp_2010 %>% 
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(sb_kelp_2010_sf) <- 4326
 
 # then 2015
-sb_kelp_2015 <- read_csv(here("data", "biomass_files", "coast_biomass_2015.csv"))
+sb_kelp_2015 <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "coast_biomass_2015.csv"))
 
 sb_kelp_2015_sf <- sb_kelp_2015 %>% 
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(sb_kelp_2015_sf) <- 4326
 
 #then 2020
-sb_kelp_2020 <- read_csv(here("data", "biomass_files", "coast_biomass_2020.csv"))
+sb_kelp_2020 <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "coast_biomass_2020.csv"))
 
 sb_kelp_2020_sf <- sb_kelp_2020 %>% 
   st_as_sf(coords = c('lon', 'lat'))
 st_crs(sb_kelp_2020_sf) <- 4326
 
 # now make a summary table for all years for santa rosa
-santa_rosa_kelp_all_years <- read_csv(here("data", "biomass_files", "santa_rosa_kelp_all_years.csv")) %>% 
+santa_rosa_kelp_all_years <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "santa_rosa_kelp_all_years.csv")) %>% 
   group_by(year) %>% 
   summarize(biomass = mean(biomass, na.rm = T))
 
@@ -80,7 +80,7 @@ santa_rosa_kelp_table <- santa_rosa_kelp_all_years %>%
          "Average Biomass (kg)" = biomass)
 
 # now make a summary table for the coast for all years 
-sb_kelp_all_years <- read_csv(here("data", "biomass_files", "coast_biomass_all_years.csv")) %>% 
+sb_kelp_all_years <- read_csv(here("sbc_lter_kelp", "data", "biomass_files", "coast_biomass_all_years.csv")) %>% 
   group_by(year) %>% 
   summarize(biomass = mean(biomass, na.rm = T))
 
@@ -97,11 +97,11 @@ sb_kelp_table <- sb_kelp_all_years %>%
 #########
 # ALL ABIOTIC FACTORS DATA GOES HERE 
 
-temp_day_sub <- read_csv(here("data", "daily_avg_temp.csv"))
-kelp_density <- read_csv(here('data', 'Annual_All_Species_Biomass_at_transect_20210108.csv'))
+temp_day_sub <- read_csv(here("sbc_lter_kelp", "data", "daily_avg_temp.csv"))
+kelp_density <- read_csv(here("sbc_lter_kelp", 'data', 'Annual_All_Species_Biomass_at_transect_20210108.csv'))
 
-kelp_factors <- read_csv(here("data", "kelp_no3_waves.csv"))
-kelp_abund <- read_csv(here('data', 'annual_kelp.csv'))
+kelp_factors <- read_csv(here("sbc_lter_kelp", "data", "kelp_no3_waves.csv"))
+kelp_abund <- read_csv(here("sbc_lter_kelp", 'data', 'annual_kelp.csv'))
 
 kelp_abund_sub <- kelp_abund %>%
   clean_names() %>% 
@@ -227,7 +227,7 @@ site_list <- unique(kelp_density_sub$site)
 #########
 # ALL COMMUNITY DATA GOES HERE 
 ## Fish:
-fish <- read_csv(here("data", "fish_abund.csv"))
+fish <- read_csv(here("sbc_lter_kelp", "data", "fish_abund.csv"))
 
 fish_clean <- fish %>%
   clean_names() %>%
@@ -250,7 +250,7 @@ fish_sub <- fish_clean %>%
                           site == 'GOLB' ~ 'Goleta Bay'))
 
 ## Invert:
-inverts <- read_csv(here("data", "inverts_abund.csv"))
+inverts <- read_csv(here("sbc_lter_kelp", "data", "inverts_abund.csv"))
 
 inverts_clean <- inverts %>%
   clean_names() %>%
